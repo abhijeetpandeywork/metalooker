@@ -40,9 +40,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Initialize Flatpickr Date Picker (if element and library exist on page)
+    let fpInstance = null;
     const datePickerEl = document.getElementById('date-range-picker');
     if (datePickerEl && typeof flatpickr !== 'undefined') {
-        const fp = flatpickr(datePickerEl, {
+        fpInstance = flatpickr(datePickerEl, {
             mode: "range",
             dateFormat: "Y-m-d",
             defaultDate: [
@@ -73,7 +74,9 @@ document.addEventListener('DOMContentLoaded', function() {
             currentFrom = dates.start;
             currentTo = dates.end;
 
-            fp.setDate([currentFrom, currentTo]);
+            if (fpInstance) {
+                fpInstance.setDate([currentFrom, currentTo]);
+            }
             fetchDashboardData(clientId, currentFrom, currentTo);
         });
     });

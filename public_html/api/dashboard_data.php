@@ -15,6 +15,7 @@ require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/helpers.php';
 
+$db = Database::getInstance();
 $role = $_SESSION['user_role'] ?? $_SESSION['role'] ?? 'guest';
 $userId = $_SESSION['user_id'] ?? 0;
 
