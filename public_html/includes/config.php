@@ -56,7 +56,14 @@ define('DB_PASS', $envVars['DB_PASS'] ?? '');
 define('DB_PORT', $envVars['DB_PORT'] ?? '3306');
 
 define('APP_ENV', $envVars['APP_ENV'] ?? 'production');
-define('APP_URL', rtrim($envVars['APP_URL'] ?? 'http://localhost', '/'));
+$envAppUrl = rtrim($envVars['APP_URL'] ?? '', '/');
+if (empty($envAppUrl) || str_contains($envAppUrl, 'localhost')) {
+    $scheme = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http';
+    $host = $_SERVER['HTTP_HOST'] ?? 'metalooker.digitalrubix.site';
+    define('APP_URL', "{$scheme}://{$host}");
+} else {
+    define('APP_URL', $envAppUrl);
+}
 define('AES_KEY', $envVars['AES_KEY'] ?? 'default_insecure_32_character_key!');
 
 define('META_APP_ID', $envVars['META_APP_ID'] ?? '');
