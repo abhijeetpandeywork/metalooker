@@ -17,12 +17,11 @@ foreach ($dirs as $dbDir) {
     }
 }
 
-require_once __DIR__ . '/../includes/config.php';
+require_once __DIR__ . '/../includes/db.php';
 $mysqlError = null;
 $mysqlOk = false;
 try {
-    $dsn = sprintf("mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4", DB_HOST, DB_PORT, DB_NAME);
-    $pdo = new PDO($dsn, DB_USER, DB_PASS, [PDO::ATTR_TIMEOUT => 5]);
+    $db = Database::getInstance();
     $mysqlOk = true;
 } catch (Exception $e) {
     $mysqlOk = false;
