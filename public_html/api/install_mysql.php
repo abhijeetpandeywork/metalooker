@@ -163,13 +163,16 @@ try {
         }
     }
 
+    // Ensure client currency and country for Sky Line Crest is AED
+    $db->exec("UPDATE clients SET currency = 'AED', country_code = 'AE', country_name = 'United Arab Emirates' WHERE id = 6 OR business_name LIKE '%Sky Line%'");
+
     echo json_encode([
-        'success' => true,
-        'message' => 'MySQL tables created and SQLite data migrated successfully!',
+        'success'          => true,
+        'logs'             => $logs,
         'migrated_clients' => $migratedClients,
-        'migrated_cache_rows' => $migratedRows
+        'migrated_rows'    => $migratedRows
     ]);
 
-} catch (Exception $e) {
+} catch (Throwable $e) {
     echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }
