@@ -141,7 +141,7 @@ $csrfToken = generateCsrfToken();
                                     <tr id="client-row-<?= $c['id'] ?>">
                                         <td class="fw-semibold"><?= e($c['business_name']) ?></td>
                                         <td><code><?= e($c['meta_ad_account_id'] ?: 'N/A') ?></code></td>
-                                        <td class="sync-time"><?= e($c['last_sync'] ? date('d M Y, hh:i A', strtotime($c['last_sync'])) : 'Never') ?></td>
+                                        <td class="sync-time"><?= e($c['last_sync'] ? date('d M Y, h:i:s A', strtotime($c['last_sync'])) : 'Never') ?></td>
                                         <td class="sync-status">
                                             <?php if ($c['last_status'] === 'success'): ?>
                                                 <span class="badge bg-success-subtle text-success"><i class="fa-solid fa-circle-check me-1"></i> Success</span>
@@ -174,7 +174,7 @@ $csrfToken = generateCsrfToken();
                         <table class="table table-striped align-middle mb-0">
                             <thead>
                                 <tr>
-                                    <th>Timestamp</th>
+                                    <th>Timestamp (IST)</th>
                                     <th>Client Name</th>
                                     <th>Status</th>
                                     <th>Rows Pulled</th>
@@ -184,7 +184,7 @@ $csrfToken = generateCsrfToken();
                             <tbody>
                                 <?php foreach ($recentLogs as $log): ?>
                                     <tr>
-                                        <td class="small text-muted"><?= date('d M Y H:i:s', strtotime($log['synced_at'])) ?></td>
+                                        <td class="small text-muted"><?= date('d M Y, h:i:s A', strtotime($log['synced_at'])) ?></td>
                                         <td class="fw-semibold"><?= e($log['business_name']) ?></td>
                                         <td>
                                             <?php if ($log['status'] === 'success'): ?>

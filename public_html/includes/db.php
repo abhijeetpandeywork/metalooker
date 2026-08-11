@@ -51,6 +51,9 @@ class Database {
                     DB_NAME
                 );
                 self::$instance = new PDO($dsn, DB_USER, DB_PASS, $options);
+                try {
+                    self::$instance->exec("SET time_zone = '+05:30'");
+                } catch (Exception $eTz) {}
                 self::ensureTables(self::$instance);
             } catch (PDOException $e) {
                 // 2. Automatic Fallback to Embedded SQLite
