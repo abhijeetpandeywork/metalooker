@@ -17,7 +17,7 @@ const config = {
 
 const localDir = __dirname;
 
-// Files and directories to deploy to remote server
+// List of relative local files to upload
 const filesToDeploy = [
     'composer.json',
     '.htaccess',
@@ -50,6 +50,17 @@ const filesToDeploy = [
     'public_html/includes/helpers.php'
 ];
 
+/**
+ * Maps local relative file path to remote destination relative to target web root.
+ * If file starts with public_html/, strips that prefix so index.php goes to root of public_html.
+ */
+function getRemoteRelativePath(localRelativePath) {
+    if (localRelativePath.startsWith('public_html/')) {
+        return localRelativePath.substring('public_html/'.length);
+    }
+    return localRelativePath;
+}
+
 const conn = new Client();
 
 console.log(' Connecting to Hostinger SSH server at ' + config.host + ':' + config.port + '...');
@@ -72,7 +83,7 @@ conn.on('ready', () => {
         ];
 
         findTargetDir(sftp, candidatePaths, (targetDir) => {
-            console.log('🚀 Target Remote Directory Resolved: ' + targetDir);
+            console.log('🚀 Target Remote Web Root Resolved: ' + targetDir);
 
             ensureRemoteDirs(sftp, targetDir, filesToDeploy, () => {
                 uploadFiles(sftp, targetDir, filesToDeploy, () => {
@@ -109,7 +120,8 @@ function findTargetDir(sftp, candidates, callback) {
 function ensureRemoteDirs(sftp, remoteTarget, files, callback) {
     const dirs = new Set();
     files.forEach(f => {
-        const parts = path.dirname(f).split(/[/\\]/);
+        const remoteRel = getRemoteRelativePath(f);
+        const parts = path.dirname(remoteRel).split(/[/\\]/);
         let current = '';
         parts.forEach(part => {
             if (part && part !== '.') {
@@ -128,7 +140,6 @@ function ensureRemoteDirs(sftp, remoteTarget, files, callback) {
         }
         const dirPath = remoteTarget + '/' + sortedDirs[index++];
         sftp.mkdir(dirPath, { mode: 0o755 }, (err) => {
-            // Ignore error if directory already exists
             createNextDir();
         });
     }
@@ -145,7 +156,8 @@ function uploadFiles(sftp, remoteTarget, files, callback) {
         }
         const file = files[index++];
         const localPath = path.join(localDir, file);
-        const remotePath = remoteTarget + '/' + file.replace(/\\/g, '/');
+        const remoteRel = getRemoteRelativePath(file);
+        const remotePath = remoteTarget + '/' + remoteRel.replace(/\\/g, '/');
 
         if (!fs.existsSync(localPath)) {
             console.warn(`⚠️ Warning: Local file missing: ${localPath}`);
