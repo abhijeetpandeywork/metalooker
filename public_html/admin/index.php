@@ -110,6 +110,11 @@ $activeClients = $clientsStmt->fetchAll();
                             <i class="fa-solid fa-users me-2"></i> Team Access
                         </a>
                     </li>
+                    <li class="nav-item mb-1">
+                        <a href="<?= APP_URL ?>/admin/settings.php" class="nav-link">
+                            <i class="fa-solid fa-gears me-2"></i> Meta App Settings
+                        </a>
+                    </li>
                 <?php endif; ?>
                 <li class="nav-item mb-1">
                     <a href="<?= APP_URL ?>/admin/sync_status.php" class="nav-link">
