@@ -364,13 +364,13 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
                                 <thead>
                                     <tr>
                                         <th>Campaign Name</th>
-                                        <th>Impressions</th>
+                                        <?php if ($client['show_impressions'] ?? 1): ?><th>Impressions</th><?php endif; ?>
                                         <th>Clicks</th>
-                                        <th>CTR</th>
-                                        <th>CPC</th>
-                                        <th>Spend</th>
-                                        <th>Conversions</th>
-                                        <th>ROAS</th>
+                                        <?php if ($client['show_ctr'] ?? 1): ?><th>CTR</th><?php endif; ?>
+                                        <?php if ($client['show_cpc'] ?? 1): ?><th>CPC</th><?php endif; ?>
+                                        <?php if ($client['show_spend'] ?? 1): ?><th>Spend</th><?php endif; ?>
+                                        <?php if ($client['show_leads'] ?? 1): ?><th>Conversions</th><?php endif; ?>
+                                        <?php if ($client['show_roas'] ?? 1): ?><th>ROAS</th><?php endif; ?>
                                     </tr>
                                 </thead>
                                 <tbody id="campaigns-table-body">
@@ -388,13 +388,13 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
                                     <thead>
                                         <tr>
                                             <th>Ad Set Name</th>
-                                            <th>Impressions</th>
+                                            <?php if ($client['show_impressions'] ?? 1): ?><th>Impressions</th><?php endif; ?>
                                             <th>Clicks</th>
-                                            <th>CTR</th>
-                                            <th>CPC</th>
-                                            <th>Spend</th>
-                                            <th>Conversions</th>
-                                            <th>ROAS</th>
+                                            <?php if ($client['show_ctr'] ?? 1): ?><th>CTR</th><?php endif; ?>
+                                            <?php if ($client['show_cpc'] ?? 1): ?><th>CPC</th><?php endif; ?>
+                                            <?php if ($client['show_spend'] ?? 1): ?><th>Spend</th><?php endif; ?>
+                                            <?php if ($client['show_leads'] ?? 1): ?><th>Conversions</th><?php endif; ?>
+                                            <?php if ($client['show_roas'] ?? 1): ?><th>ROAS</th><?php endif; ?>
                                         </tr>
                                     </thead>
                                     <tbody id="adsets-table-body">
@@ -412,13 +412,13 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
                                 <thead>
                                     <tr>
                                         <th>Ad Name</th>
-                                        <th>Impressions</th>
+                                        <?php if ($client['show_impressions'] ?? 1): ?><th>Impressions</th><?php endif; ?>
                                         <th>Clicks</th>
-                                        <th>CTR</th>
-                                        <th>CPC</th>
-                                        <th>Spend</th>
-                                        <th>Conversions</th>
-                                        <th>ROAS</th>
+                                        <?php if ($client['show_ctr'] ?? 1): ?><th>CTR</th><?php endif; ?>
+                                        <?php if ($client['show_cpc'] ?? 1): ?><th>CPC</th><?php endif; ?>
+                                        <?php if ($client['show_spend'] ?? 1): ?><th>Spend</th><?php endif; ?>
+                                        <?php if ($client['show_leads'] ?? 1): ?><th>Conversions</th><?php endif; ?>
+                                        <?php if ($client['show_roas'] ?? 1): ?><th>ROAS</th><?php endif; ?>
                                     </tr>
                                 </thead>
                                 <tbody id="ads-table-body">
@@ -476,6 +476,16 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
     <!-- Scripts -->
     <script>
         window.APP_URL = "<?= APP_URL ?>";
+        window.clientWidgetConfig = {
+            show_spend: <?= (int)($client['show_spend'] ?? 1) ?>,
+            show_roas: <?= (int)($client['show_roas'] ?? 1) ?>,
+            show_leads: <?= (int)($client['show_leads'] ?? 1) ?>,
+            show_cpc: <?= (int)($client['show_cpc'] ?? 1) ?>,
+            show_ctr: <?= (int)($client['show_ctr'] ?? 1) ?>,
+            show_impressions: <?= (int)($client['show_impressions'] ?? 1) ?>,
+            show_campaigns: <?= (int)($client['show_campaigns'] ?? 1) ?>,
+            show_adsets: <?= (int)($client['show_adsets'] ?? 1) ?>
+        };
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>

@@ -317,8 +317,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const tbody = document.getElementById(elementId);
         if (!tbody) return;
 
+        const cfg = window.clientWidgetConfig || {};
+        const colCount = 1 + (cfg.show_impressions !== 0 ? 1 : 0) + 1 + (cfg.show_ctr !== 0 ? 1 : 0) + (cfg.show_cpc !== 0 ? 1 : 0) + (cfg.show_spend !== 0 ? 1 : 0) + (cfg.show_leads !== 0 ? 1 : 0) + (cfg.show_roas !== 0 ? 1 : 0);
+
         if (!rows || rows.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4"><i class="fa-regular fa-folder-open me-2 fs-5"></i> No ad metrics found matching search query or date range.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="${colCount}" class="text-center text-muted py-4"><i class="fa-regular fa-folder-open me-2 fs-5"></i> No ad metrics found matching search query or date range.</td></tr>`;
             return;
         }
 
@@ -326,18 +329,16 @@ document.addEventListener('DOMContentLoaded', function() {
         let html = '';
 
         rows.forEach(r => {
-            html += `
-                <tr>
-                    <td class="fw-semibold">${escapeHtml(r.name)}</td>
-                    <td>${formatNum(r.impressions, 0)}</td>
-                    <td>${formatNum(r.clicks, 0)}</td>
-                    <td><span class="badge bg-info bg-opacity-15 text-info border border-info border-opacity-25 fw-bold">${formatNum(r.ctr, 2)}%</span></td>
-                    <td>${sym}${formatNum(r.cpc, 2)}</td>
-                    <td class="fw-bold">${sym}${formatNum(r.spend, 2)}</td>
-                    <td>${formatNum(r.conversions, 0)}</td>
-                    <td><span class="badge bg-success bg-opacity-15 text-success border border-success border-opacity-25 fw-bold">${formatNum(r.roas, 2)}x</span></td>
-                </tr>
-            `;
+            let rowHtml = `<tr><td class="fw-semibold">${escapeHtml(r.name)}</td>`;
+            if (cfg.show_impressions !== 0) rowHtml += `<td>${formatNum(r.impressions, 0)}</td>`;
+            rowHtml += `<td>${formatNum(r.clicks, 0)}</td>`;
+            if (cfg.show_ctr !== 0) rowHtml += `<td><span class="badge-ctr">${formatNum(r.ctr, 2)}%</span></td>`;
+            if (cfg.show_cpc !== 0) rowHtml += `<td>${sym}${formatNum(r.cpc, 2)}</td>`;
+            if (cfg.show_spend !== 0) rowHtml += `<td class="fw-bold">${sym}${formatNum(r.spend, 2)}</td>`;
+            if (cfg.show_leads !== 0) rowHtml += `<td>${formatNum(r.conversions, 0)}</td>`;
+            if (cfg.show_roas !== 0) rowHtml += `<td><span class="badge-roas">${formatNum(r.roas, 2)}x</span></td>`;
+            rowHtml += `</tr>`;
+            html += rowHtml;
         });
 
         tbody.innerHTML = html;
