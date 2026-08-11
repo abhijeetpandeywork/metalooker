@@ -62,9 +62,10 @@ function syncClientData(array $client): array {
         // Determine sync date range
         $checkStmt = $db->prepare("SELECT COUNT(*) as cnt FROM ad_data_cache WHERE client_id = ?");
         $checkStmt->execute([$clientId]);
-        $hasData = ($checkStmt->fetch()['cnt'] ?? 0) > 0;
+        $checkRows = $checkStmt->fetchAll();
         $checkStmt->closeCursor();
         $checkStmt = null;
+        $hasData = ($checkRows[0]['cnt'] ?? 0) > 0;
 
         $dateStop = (new DateTime())->modify('-1 day')->format('Y-m-d');
         if ($hasData) {

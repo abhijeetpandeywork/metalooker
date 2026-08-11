@@ -99,11 +99,13 @@ class Database {
      */
     private static function ensureSqliteSchema(PDO $pdo): void {
         $check = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='users'");
-        $hasUsers = (bool)$check->fetch();
-        $check->closeCursor();
-        $check = null;
+        $rows = $check ? $check->fetchAll() : [];
+        if ($check) {
+            $check->closeCursor();
+            $check = null;
+        }
 
-        if (!$hasUsers) {
+        if (empty($rows)) {
             $sqliteSchema = "
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
