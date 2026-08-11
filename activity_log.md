@@ -42,4 +42,16 @@ All major milestones, feature additions, database migrations, and deployment eve
 - **Client & Team Management**: Built `public_html/admin/clients.php` and `public_html/admin/team.php`.
 - **Export Engines**: Built `public_html/api/export_csv.php` and `public_html/api/export_pdf.php`.
 - **Agent Knowledge Base**: Authored `.agents/AGENTS.md` to ensure complete portable awareness for any AI agent.
-- **Automated Deployment**: Created `deploy.js` for SFTP/SSH deployment to Hostinger (`metalooker.digitalrubix.site`).
+
+---
+
+## [Phase 6] — 2026-08-11: Multi-Client Account Isolation, Global Currencies & Audit Fixes
+- **Strict Ad Account Validation**: Enforced strict validation in `cron/sync_all.php` requiring each client to have an explicit `meta_ad_account_id` set before sync. Prevents new/unconfigured clients from defaulting to or cross-fetching another client's ad data.
+- **Configured Client Ad Accounts**:
+  - **Bagnomy** (ID: 2): `act_221342178972532` (INR)
+  - **Sky Line Crest** (ID: 3): `act_1568346498205053` (AED)
+  - **J Square** (ID: 4): `act_1520125500129977` (INR/AED)
+- **Global Currency Engine**: Expanded `formatCurrency()` in `includes/helpers.php` and `getCurrencySymbol()` in `assets/js/dashboard.js` to support all international currencies (`AED`, `INR`, `USD`, `EUR`, `GBP`, `SAR`, `QAR`, `KWD`, `OMR`, `BHD`, `CAD`, `AUD`, `SGD`, `JPY`, `ZAR`).
+- **Date Filter & Level Scoping Fixes**: Updated `api/dashboard_data.php` to query `level = 'campaign'` with strict `$from` to `$to` parameters, eliminating double-counting and enabling dynamic date window recalculations.
+- **Admin Managed Spend**: Filtered `admin/index.php` Total Managed Spend to the active 30-day window (`date_start >= DATE_SUB(NOW(), INTERVAL 30 DAYS)`).
+
