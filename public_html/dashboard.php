@@ -206,7 +206,7 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
                         </div>
                         <h3 class="kpi-value" id="kpi-spend">—</h3>
                         <div class="d-flex justify-content-between align-items-center">
-                            <small class="text-muted">Calculated for selected period</small>
+                            <small class="text-muted" id="trend-spend">Selected period total</small>
                         </div>
                     </div>
                 </div>
@@ -223,7 +223,7 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
                         </div>
                         <h3 class="kpi-value text-success" id="kpi-roas">—</h3>
                         <div class="d-flex justify-content-between align-items-center">
-                            <small class="text-muted">Average Purchase ROAS Multiple</small>
+                            <small class="text-muted" id="trend-roas">Average Purchase ROAS</small>
                         </div>
                     </div>
                 </div>
@@ -233,14 +233,31 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
                 <div class="col-xl-3 col-md-6">
                     <div class="kpi-card">
                         <div class="d-flex justify-content-between align-items-center">
-                            <span class="kpi-title">Conversions / Leads</span>
+                            <span class="kpi-title">Conversions / Results</span>
                             <button type="button" class="info-popover-btn" data-bs-toggle="popover" title="Total Results" data-bs-content="Count of desired action outcomes (e.g. Lead Form submissions, Purchases, or Registrations).">
                                 i
                             </button>
                         </div>
                         <h3 class="kpi-value" id="kpi-conversions">—</h3>
                         <div class="d-flex justify-content-between align-items-center">
-                            <small class="text-muted">Total Attributed Results</small>
+                            <small class="text-muted" id="trend-conversions">Total Attributed Results</small>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
+
+            <?php if ($client['show_leads'] ?? 1): ?>
+                <div class="col-xl-3 col-md-6">
+                    <div class="kpi-card">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="kpi-title">Cost Per Result (CPR)</span>
+                            <button type="button" class="info-popover-btn" data-bs-toggle="popover" title="Cost Per Result" data-bs-content="Formula: Total Ad Spend / Total Results. Measures acquisition cost per outcome.">
+                                i
+                            </button>
+                        </div>
+                        <h3 class="kpi-value" id="kpi-cpr">—</h3>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted" id="trend-cpr">Avg. Acquisition Cost</small>
                         </div>
                     </div>
                 </div>
@@ -251,13 +268,13 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
                     <div class="kpi-card">
                         <div class="d-flex justify-content-between align-items-center">
                             <span class="kpi-title">Click-Through Rate (CTR)</span>
-                            <button type="button" class="info-popover-btn" data-bs-toggle="popover" title="CTR Percentage" data-bs-content="Formula: (Total Clicks / Total Impressions) * 100. Measures ad creative engagement effectiveness.">
+                            <button type="button" class="info-popover-btn" data-bs-toggle="popover" title="CTR Percentage" data-bs-content="Formula: (Total Clicks / Total Impressions) * 100. Measures ad creative engagement efficiency.">
                                 i
                             </button>
                         </div>
                         <h3 class="kpi-value" id="kpi-ctr">—</h3>
                         <div class="d-flex justify-content-between align-items-center">
-                            <small class="text-muted">Avg. Engagement Efficiency</small>
+                            <small class="text-muted" id="trend-ctr">Link Click Efficiency</small>
                         </div>
                     </div>
                 </div>
@@ -274,7 +291,7 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
                         </div>
                         <h3 class="kpi-value" id="kpi-cpc">—</h3>
                         <div class="d-flex justify-content-between align-items-center">
-                            <small class="text-muted">Average Link Click Cost</small>
+                            <small class="text-muted" id="trend-cpc">Average Link Click Cost</small>
                         </div>
                     </div>
                 </div>
@@ -284,14 +301,31 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
                 <div class="col-xl-3 col-md-6">
                     <div class="kpi-card">
                         <div class="d-flex justify-content-between align-items-center">
-                            <span class="kpi-title">Total Impressions</span>
-                            <button type="button" class="info-popover-btn" data-bs-toggle="popover" title="Impressions" data-bs-content="Total number of times your ads were rendered on screen across Meta platforms (Facebook & Instagram).">
+                            <span class="kpi-title">Cost Per 1,000 Impressions (CPM)</span>
+                            <button type="button" class="info-popover-btn" data-bs-toggle="popover" title="Formulated CPM" data-bs-content="Formula: (Total Ad Spend / Total Impressions) * 1000. Formulated cost per thousand views.">
                                 i
                             </button>
                         </div>
-                        <h3 class="kpi-value" id="kpi-impressions">—</h3>
+                        <h3 class="kpi-value" id="kpi-cpm">—</h3>
                         <div class="d-flex justify-content-between align-items-center">
-                            <small class="text-muted">Total Ad Views Delivered</small>
+                            <small class="text-muted" id="trend-cpm">Cost Per 1K Views</small>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
+
+            <?php if ($client['show_impressions'] ?? 1): ?>
+                <div class="col-xl-3 col-md-6">
+                    <div class="kpi-card">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="kpi-title">Reach & Frequency</span>
+                            <button type="button" class="info-popover-btn" data-bs-toggle="popover" title="Reach & Frequency" data-bs-content="Reach: Unique users who saw your ads. Frequency: Impressions / Reach (average views per person).">
+                                i
+                            </button>
+                        </div>
+                        <h3 class="kpi-value" id="kpi-reach">—</h3>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted" id="kpi-frequency">Freq: —</small>
                         </div>
                     </div>
                 </div>
@@ -364,17 +398,21 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
                                 <thead>
                                     <tr>
                                         <th>Campaign Name</th>
+                                        <?php if ($client['show_impressions'] ?? 1): ?><th>Reach</th><?php endif; ?>
                                         <?php if ($client['show_impressions'] ?? 1): ?><th>Impressions</th><?php endif; ?>
+                                        <?php if ($client['show_impressions'] ?? 1): ?><th>Frequency</th><?php endif; ?>
                                         <th>Clicks</th>
                                         <?php if ($client['show_ctr'] ?? 1): ?><th>CTR</th><?php endif; ?>
                                         <?php if ($client['show_cpc'] ?? 1): ?><th>CPC</th><?php endif; ?>
+                                        <?php if ($client['show_impressions'] ?? 1): ?><th>CPM</th><?php endif; ?>
                                         <?php if ($client['show_spend'] ?? 1): ?><th>Spend</th><?php endif; ?>
-                                        <?php if ($client['show_leads'] ?? 1): ?><th>Conversions</th><?php endif; ?>
+                                        <?php if ($client['show_leads'] ?? 1): ?><th>Results</th><?php endif; ?>
+                                        <?php if ($client['show_leads'] ?? 1): ?><th>CPR</th><?php endif; ?>
                                         <?php if ($client['show_roas'] ?? 1): ?><th>ROAS</th><?php endif; ?>
                                     </tr>
                                 </thead>
                                 <tbody id="campaigns-table-body">
-                                    <tr><td colspan="8" class="text-center text-muted py-4">Loading campaign data...</td></tr>
+                                    <tr><td colspan="12" class="text-center text-muted py-4">Loading campaign data...</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -388,17 +426,21 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
                                     <thead>
                                         <tr>
                                             <th>Ad Set Name</th>
+                                            <?php if ($client['show_impressions'] ?? 1): ?><th>Reach</th><?php endif; ?>
                                             <?php if ($client['show_impressions'] ?? 1): ?><th>Impressions</th><?php endif; ?>
+                                            <?php if ($client['show_impressions'] ?? 1): ?><th>Frequency</th><?php endif; ?>
                                             <th>Clicks</th>
                                             <?php if ($client['show_ctr'] ?? 1): ?><th>CTR</th><?php endif; ?>
                                             <?php if ($client['show_cpc'] ?? 1): ?><th>CPC</th><?php endif; ?>
+                                            <?php if ($client['show_impressions'] ?? 1): ?><th>CPM</th><?php endif; ?>
                                             <?php if ($client['show_spend'] ?? 1): ?><th>Spend</th><?php endif; ?>
-                                            <?php if ($client['show_leads'] ?? 1): ?><th>Conversions</th><?php endif; ?>
+                                            <?php if ($client['show_leads'] ?? 1): ?><th>Results</th><?php endif; ?>
+                                            <?php if ($client['show_leads'] ?? 1): ?><th>CPR</th><?php endif; ?>
                                             <?php if ($client['show_roas'] ?? 1): ?><th>ROAS</th><?php endif; ?>
                                         </tr>
                                     </thead>
                                     <tbody id="adsets-table-body">
-                                        <tr><td colspan="8" class="text-center text-muted py-4">Loading ad set data...</td></tr>
+                                        <tr><td colspan="12" class="text-center text-muted py-4">Loading ad set data...</td></tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -412,17 +454,21 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
                                 <thead>
                                     <tr>
                                         <th>Ad Name</th>
+                                        <?php if ($client['show_impressions'] ?? 1): ?><th>Reach</th><?php endif; ?>
                                         <?php if ($client['show_impressions'] ?? 1): ?><th>Impressions</th><?php endif; ?>
+                                        <?php if ($client['show_impressions'] ?? 1): ?><th>Frequency</th><?php endif; ?>
                                         <th>Clicks</th>
                                         <?php if ($client['show_ctr'] ?? 1): ?><th>CTR</th><?php endif; ?>
                                         <?php if ($client['show_cpc'] ?? 1): ?><th>CPC</th><?php endif; ?>
+                                        <?php if ($client['show_impressions'] ?? 1): ?><th>CPM</th><?php endif; ?>
                                         <?php if ($client['show_spend'] ?? 1): ?><th>Spend</th><?php endif; ?>
-                                        <?php if ($client['show_leads'] ?? 1): ?><th>Conversions</th><?php endif; ?>
+                                        <?php if ($client['show_leads'] ?? 1): ?><th>Results</th><?php endif; ?>
+                                        <?php if ($client['show_leads'] ?? 1): ?><th>CPR</th><?php endif; ?>
                                         <?php if ($client['show_roas'] ?? 1): ?><th>ROAS</th><?php endif; ?>
                                     </tr>
                                 </thead>
                                 <tbody id="ads-table-body">
-                                    <tr><td colspan="8" class="text-center text-muted py-4">Loading ad data...</td></tr>
+                                    <tr><td colspan="12" class="text-center text-muted py-4">Loading ad data...</td></tr>
                                 </tbody>
                             </table>
                         </div>

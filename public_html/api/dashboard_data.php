@@ -68,7 +68,7 @@ if (empty($from) || empty($to)) {
 }
 
 try {
-    // 1. Aggregated Key Performance Indicators (Campaign Level ONLY to avoid double-counting with account level)
+    // 1. Aggregated Key Performance Indicators (Current Period)
     $kpiStmt = $db->prepare("
         SELECT
             SUM(impressions) as impressions,
@@ -93,6 +93,7 @@ try {
     $cpc = $clicks > 0 ? round($spend / $clicks, 2) : 0.0;
     $cpm = $impressions > 0 ? round(($spend / $impressions) * 1000, 2) : 0.0;
     $costPerResult = $conversions > 0 ? round($spend / $conversions, 2) : 0.0;
+    $frequency = $reach > 0 ? round($impressions / $reach, 2) : 1.0;
 
     // Fetch average ROAS
     $roasStmt = $db->prepare("
@@ -104,7 +105,60 @@ try {
     $roasStmt->execute([$clientId, $from, $to]);
     $avgRoas = (float)($roasStmt->fetch()['avg_roas'] ?? 0.0);
 
-    // 2. Daily Spend & Performance Series (Chart.js)
+    // 2. Preceding Comparison Period Range for Trend % Calculation
+    $startDate = new DateTime($from);
+    $endDate   = new DateTime($to);
+    $diffDays  = $startDate->diff($endDate)->days + 1;
+
+    $prevEndDate   = (clone $startDate)->modify('-1 day');
+    $prevStartDate = (clone $prevEndDate)->modify("-" . ($diffDays - 1) . " days");
+    $prevFrom = $prevStartDate->format('Y-m-d');
+    $prevTo   = $prevEndDate->format('Y-m-d');
+
+    $prevStmt = $db->prepare("
+        SELECT
+            SUM(impressions) as impressions,
+            SUM(reach) as reach,
+            SUM(clicks) as clicks,
+            SUM(spend) as spend,
+            SUM(conversions) as conversions
+        FROM ad_data_cache
+        WHERE client_id = ? AND level = 'campaign'
+        AND date_start >= ? AND date_start <= ?
+    ");
+    $prevStmt->execute([$clientId, $prevFrom, $prevTo]);
+    $prevRaw = $prevStmt->fetch();
+
+    $prevSpend       = (float)($prevRaw['spend'] ?? 0.0);
+    $prevImpressions = (int)($prevRaw['impressions'] ?? 0);
+    $prevReach       = (int)($prevRaw['reach'] ?? 0);
+    $prevClicks      = (int)($prevRaw['clicks'] ?? 0);
+    $prevConversions = (int)($prevRaw['conversions'] ?? 0);
+
+    $prevCtr  = $prevImpressions > 0 ? ($prevClicks / $prevImpressions) * 100 : 0.0;
+    $prevCpc  = $prevClicks > 0 ? $prevSpend / $prevClicks : 0.0;
+    $prevCpm  = $prevImpressions > 0 ? ($prevSpend / $prevImpressions) * 1000 : 0.0;
+    $prevCpr  = $prevConversions > 0 ? $prevSpend / $prevConversions : 0.0;
+
+    $calcTrend = function($curr, $prev) {
+        if ($prev <= 0) return 0.0;
+        return round((($curr - $prev) / $prev) * 100, 1);
+    };
+
+    $trends = [
+        'spend'           => $calcTrend($spend, $prevSpend),
+        'impressions'     => $calcTrend($impressions, $prevImpressions),
+        'reach'           => $calcTrend($reach, $prevReach),
+        'clicks'          => $calcTrend($clicks, $prevClicks),
+        'conversions'     => $calcTrend($conversions, $prevConversions),
+        'ctr'             => $calcTrend($ctr, $prevCtr),
+        'cpc'             => $calcTrend($cpc, $prevCpc),
+        'cpm'             => $calcTrend($cpm, $prevCpm),
+        'cost_per_result' => $calcTrend($costPerResult, $prevCpr),
+        'roas'            => 0.0
+    ];
+
+    // 3. Daily Spend & Performance Series (Chart.js)
     $seriesStmt = $db->prepare("
         SELECT
             date_start as date,
@@ -120,12 +174,13 @@ try {
     $seriesStmt->execute([$clientId, $from, $to]);
     $dailySeries = $seriesStmt->fetchAll();
 
-    // 3. Campaign Breakdown Table
+    // 4. Campaign Breakdown Table (Full 12 Metrics)
     $cmpStmt = $db->prepare("
         SELECT
             object_id,
             object_name as name,
             SUM(impressions) as impressions,
+            SUM(reach) as reach,
             SUM(clicks) as clicks,
             SUM(spend) as spend,
             SUM(conversions) as conversions,
@@ -139,21 +194,28 @@ try {
     $cmpStmt->execute([$clientId, $from, $to]);
     $campaigns = array_map(function($row) {
         $imp = (int)$row['impressions'];
+        $rch = (int)$row['reach'];
         $clk = (int)$row['clicks'];
         $spd = (float)$row['spend'];
-        $row['ctr'] = $imp > 0 ? round(($clk / $imp) * 100, 2) : 0.0;
-        $row['cpc'] = $clk > 0 ? round($spd / $clk, 2) : 0.0;
-        $row['cpm'] = $imp > 0 ? round(($spd / $imp) * 1000, 2) : 0.0;
-        $row['roas'] = round((float)$row['roas'], 2);
+        $cnv = (int)$row['conversions'];
+
+        $row['reach']       = $rch;
+        $row['frequency']   = $rch > 0 ? round($imp / $rch, 2) : 1.0;
+        $row['ctr']         = $imp > 0 ? round(($clk / $imp) * 100, 2) : 0.0;
+        $row['cpc']         = $clk > 0 ? round($spd / $clk, 2) : 0.0;
+        $row['cpm']         = $imp > 0 ? round(($spd / $imp) * 1000, 2) : 0.0;
+        $row['cpr']         = $cnv > 0 ? round($spd / $cnv, 2) : 0.0;
+        $row['roas']        = round((float)$row['roas'], 2);
         return $row;
     }, $cmpStmt->fetchAll());
 
-    // 4. Ad Sets Breakdown Table
+    // 5. Ad Sets Breakdown Table
     $adsetStmt = $db->prepare("
         SELECT
             object_id,
             object_name as name,
             SUM(impressions) as impressions,
+            SUM(reach) as reach,
             SUM(clicks) as clicks,
             SUM(spend) as spend,
             SUM(conversions) as conversions,
@@ -167,20 +229,28 @@ try {
     $adsetStmt->execute([$clientId, $from, $to]);
     $adsets = array_map(function($row) {
         $imp = (int)$row['impressions'];
+        $rch = (int)$row['reach'];
         $clk = (int)$row['clicks'];
         $spd = (float)$row['spend'];
-        $row['ctr'] = $imp > 0 ? round(($clk / $imp) * 100, 2) : 0.0;
-        $row['cpc'] = $clk > 0 ? round($spd / $clk, 2) : 0.0;
-        $row['roas'] = round((float)$row['roas'], 2);
+        $cnv = (int)$row['conversions'];
+
+        $row['reach']       = $rch;
+        $row['frequency']   = $rch > 0 ? round($imp / $rch, 2) : 1.0;
+        $row['ctr']         = $imp > 0 ? round(($clk / $imp) * 100, 2) : 0.0;
+        $row['cpc']         = $clk > 0 ? round($spd / $clk, 2) : 0.0;
+        $row['cpm']         = $imp > 0 ? round(($spd / $imp) * 1000, 2) : 0.0;
+        $row['cpr']         = $cnv > 0 ? round($spd / $cnv, 2) : 0.0;
+        $row['roas']        = round((float)$row['roas'], 2);
         return $row;
     }, $adsetStmt->fetchAll());
 
-    // 5. Ads Breakdown Table
+    // 6. Ads Breakdown Table
     $adStmt = $db->prepare("
         SELECT
             object_id,
             object_name as name,
             SUM(impressions) as impressions,
+            SUM(reach) as reach,
             SUM(clicks) as clicks,
             SUM(spend) as spend,
             SUM(conversions) as conversions,
@@ -194,11 +264,18 @@ try {
     $adStmt->execute([$clientId, $from, $to]);
     $ads = array_map(function($row) {
         $imp = (int)$row['impressions'];
+        $rch = (int)$row['reach'];
         $clk = (int)$row['clicks'];
         $spd = (float)$row['spend'];
-        $row['ctr'] = $imp > 0 ? round(($clk / $imp) * 100, 2) : 0.0;
-        $row['cpc'] = $clk > 0 ? round($spd / $clk, 2) : 0.0;
-        $row['roas'] = round((float)$row['roas'], 2);
+        $cnv = (int)$row['conversions'];
+
+        $row['reach']       = $rch;
+        $row['frequency']   = $rch > 0 ? round($imp / $rch, 2) : 1.0;
+        $row['ctr']         = $imp > 0 ? round(($clk / $imp) * 100, 2) : 0.0;
+        $row['cpc']         = $clk > 0 ? round($spd / $clk, 2) : 0.0;
+        $row['cpm']         = $imp > 0 ? round(($spd / $imp) * 1000, 2) : 0.0;
+        $row['cpr']         = $cnv > 0 ? round($spd / $cnv, 2) : 0.0;
+        $row['roas']        = round((float)$row['roas'], 2);
         return $row;
     }, $adStmt->fetchAll());
 
@@ -211,6 +288,7 @@ try {
             'spend'           => $spend,
             'impressions'     => $impressions,
             'reach'           => $reach,
+            'frequency'       => $frequency,
             'clicks'          => $clicks,
             'ctr'             => $ctr,
             'cpc'             => $cpc,
@@ -219,6 +297,7 @@ try {
             'cost_per_result' => $costPerResult,
             'roas'            => round($avgRoas, 2)
         ],
+        'trends'      => $trends,
         'chart_daily' => $dailySeries,
         'campaigns'   => $campaigns,
         'adsets'      => $adsets,

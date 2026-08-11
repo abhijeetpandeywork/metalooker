@@ -181,32 +181,61 @@ document.addEventListener('DOMContentLoaded', function() {
     /**
      * Updates KPI metric cards with period trends
      */
-    function updateKpiCards(kpis, curr) {
+    function updateKpiCards(kpis, trends, curr) {
         const sym = getCurrencySymbol(curr);
+
+        const renderTrend = (elId, val, label) => {
+            const el = document.getElementById(elId);
+            if (!el) return;
+            if (val > 0) {
+                el.innerHTML = `<span class="badge bg-success-subtle text-success fw-bold p-1"><i class="fa-solid fa-arrow-trend-up me-1"></i>+${val}% vs prev</span>`;
+            } else if (val < 0) {
+                el.innerHTML = `<span class="badge bg-danger-subtle text-danger fw-bold p-1"><i class="fa-solid fa-arrow-trend-down me-1"></i>${val}% vs prev</span>`;
+            } else {
+                el.innerText = label;
+            }
+        };
 
         if (document.getElementById('kpi-spend')) {
             document.getElementById('kpi-spend').innerText = sym + formatNum(kpis.spend, 2);
+            renderTrend('trend-spend', trends?.spend, 'Selected period total');
         }
         if (document.getElementById('kpi-impressions')) {
             document.getElementById('kpi-impressions').innerText = formatNum(kpis.impressions, 0);
+            renderTrend('trend-impressions', trends?.impressions, 'Total Ad Views Delivered');
+        }
+        if (document.getElementById('kpi-reach')) {
+            document.getElementById('kpi-reach').innerText = formatNum(kpis.reach, 0);
+        }
+        if (document.getElementById('kpi-frequency')) {
+            document.getElementById('kpi-frequency').innerText = 'Freq: ' + formatNum(kpis.frequency, 2) + 'x';
         }
         if (document.getElementById('kpi-clicks')) {
             document.getElementById('kpi-clicks').innerText = formatNum(kpis.clicks, 0);
         }
         if (document.getElementById('kpi-ctr')) {
             document.getElementById('kpi-ctr').innerText = formatNum(kpis.ctr, 2) + '%';
+            renderTrend('trend-ctr', trends?.ctr, 'Link Click Efficiency');
         }
         if (document.getElementById('kpi-cpc')) {
             document.getElementById('kpi-cpc').innerText = sym + formatNum(kpis.cpc, 2);
+            renderTrend('trend-cpc', trends?.cpc, 'Average Link Click Cost');
         }
         if (document.getElementById('kpi-cpm')) {
             document.getElementById('kpi-cpm').innerText = sym + formatNum(kpis.cpm, 2);
+            renderTrend('trend-cpm', trends?.cpm, 'Cost Per 1K Views');
         }
         if (document.getElementById('kpi-conversions')) {
             document.getElementById('kpi-conversions').innerText = formatNum(kpis.conversions, 0);
+            renderTrend('trend-conversions', trends?.conversions, 'Total Attributed Results');
+        }
+        if (document.getElementById('kpi-cpr')) {
+            document.getElementById('kpi-cpr').innerText = sym + formatNum(kpis.cost_per_result, 2);
+            renderTrend('trend-cpr', trends?.cost_per_result, 'Avg. Acquisition Cost');
         }
         if (document.getElementById('kpi-roas')) {
             document.getElementById('kpi-roas').innerText = formatNum(kpis.roas, 2) + 'x';
+            renderTrend('trend-roas', trends?.roas, 'Average Purchase ROAS');
         }
     }
 
@@ -318,7 +347,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!tbody) return;
 
         const cfg = window.clientWidgetConfig || {};
-        const colCount = 1 + (cfg.show_impressions !== 0 ? 1 : 0) + 1 + (cfg.show_ctr !== 0 ? 1 : 0) + (cfg.show_cpc !== 0 ? 1 : 0) + (cfg.show_spend !== 0 ? 1 : 0) + (cfg.show_leads !== 0 ? 1 : 0) + (cfg.show_roas !== 0 ? 1 : 0);
+        const colCount = 1 + (cfg.show_impressions !== 0 ? 3 : 0) + 1 + (cfg.show_ctr !== 0 ? 1 : 0) + (cfg.show_cpc !== 0 ? 1 : 0) + (cfg.show_impressions !== 0 ? 1 : 0) + (cfg.show_spend !== 0 ? 1 : 0) + (cfg.show_leads !== 0 ? 2 : 0) + (cfg.show_roas !== 0 ? 1 : 0);
 
         if (!rows || rows.length === 0) {
             tbody.innerHTML = `<tr><td colspan="${colCount}" class="text-center text-muted py-4"><i class="fa-regular fa-folder-open me-2 fs-5"></i> No ad metrics found matching search query or date range.</td></tr>`;
@@ -330,12 +359,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
         rows.forEach(r => {
             let rowHtml = `<tr><td class="fw-semibold">${escapeHtml(r.name)}</td>`;
+            if (cfg.show_impressions !== 0) rowHtml += `<td>${formatNum(r.reach, 0)}</td>`;
             if (cfg.show_impressions !== 0) rowHtml += `<td>${formatNum(r.impressions, 0)}</td>`;
+            if (cfg.show_impressions !== 0) rowHtml += `<td>${formatNum(r.frequency, 2)}x</td>`;
             rowHtml += `<td>${formatNum(r.clicks, 0)}</td>`;
             if (cfg.show_ctr !== 0) rowHtml += `<td><span style="font-weight: 700; color: #0284c7; background-color: rgba(2,132,199,0.12); border: 1px solid rgba(2,132,199,0.3); padding: 3px 8px; border-radius: 6px; display: inline-block; font-size: 12px;">${formatNum(r.ctr, 2)}%</span></td>`;
             if (cfg.show_cpc !== 0) rowHtml += `<td>${sym}${formatNum(r.cpc, 2)}</td>`;
+            if (cfg.show_impressions !== 0) rowHtml += `<td>${sym}${formatNum(r.cpm, 2)}</td>`;
             if (cfg.show_spend !== 0) rowHtml += `<td class="fw-bold">${sym}${formatNum(r.spend, 2)}</td>`;
             if (cfg.show_leads !== 0) rowHtml += `<td>${formatNum(r.conversions, 0)}</td>`;
+            if (cfg.show_leads !== 0) rowHtml += `<td>${sym}${formatNum(r.cpr, 2)}</td>`;
             if (cfg.show_roas !== 0) rowHtml += `<td><span style="font-weight: 700; color: #059669; background-color: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.3); padding: 3px 8px; border-radius: 6px; display: inline-block; font-size: 12px;">${formatNum(r.roas, 2)}x</span></td>`;
             rowHtml += `</tr>`;
             html += rowHtml;
