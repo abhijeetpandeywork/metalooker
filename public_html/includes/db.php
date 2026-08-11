@@ -79,19 +79,61 @@ class Database {
     }
 
     /**
-     * Ensures MySQL system_settings table exists.
+     * Ensures MySQL system tables exist and migrates data from SQLite if fresh.
      */
     private static function ensureTables(PDO $pdo): void {
         try {
-            $pdo->exec("
-                CREATE TABLE IF NOT EXISTS system_settings (
-                    setting_key VARCHAR(100) PRIMARY KEY,
-                    setting_value TEXT DEFAULT NULL,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-            ");
+            $check = $pdo->query("SHOW TABLES LIKE 'users'");
+            $exists = $check ? (bool)$check->fetch() : false;
+            if ($check) { $check->closeCursor(); }
+
+            if (!$exists) {
+                $migrationFile = dirname(__DIR__, 2) . '/db/migrations/001_create_tables.sql';
+                if (file_exists($migrationFile)) {
+                    $sql = file_get_contents($migrationFile);
+                    $statements = array_filter(array_map('trim', explode(';', $sql)));
+                    foreach ($statements as $stmt) {
+                        if (!empty($stmt)) {
+                            @$pdo->exec($stmt);
+                        }
+                    }
+                }
+                $seedFile = dirname(__DIR__, 2) . '/db/migrations/002_seed_admin.sql';
+                if (file_exists($seedFile)) {
+                    $sql = file_get_contents($seedFile);
+                    $statements = array_filter(array_map('trim', explode(';', $sql)));
+                    foreach ($statements as $stmt) {
+                        if (!empty($stmt)) {
+                            @$pdo->exec($stmt);
+                        }
+                    }
+                }
+
+                // Automatically migrate clients & data from SQLite file if present
+                $sqliteFile = __DIR__ . '/storage/metapanel.sqlite';
+                if (file_exists($sqliteFile)) {
+                    try {
+                        $sPdo = new PDO("sqlite:" . $sqliteFile);
+                        $sPdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+
+                        $clients = $sPdo->query("SELECT * FROM clients")->fetchAll();
+                        foreach ($clients as $c) {
+                            $stmt = $pdo->prepare("INSERT INTO clients (id, user_id, business_name, logo_path, brand_color, currency, meta_ad_account_id, meta_access_token, token_expires_at, active, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE business_name=VALUES(business_name)");
+                            $stmt->execute([$c['id'], $c['user_id'], $c['business_name'], $c['logo_path'], $c['brand_color'], $c['currency'], $c['meta_ad_account_id'], $c['meta_access_token'], $c['token_expires_at'], $c['active'], $c['created_at']]);
+                        }
+
+                        $cache = $sPdo->query("SELECT * FROM ad_data_cache")->fetchAll();
+                        foreach ($cache as $r) {
+                            $stmt = $pdo->prepare("INSERT INTO ad_data_cache (client_id, level, object_id, object_name, date_start, date_stop, impressions, reach, clicks, spend, cpc, ctr, cpm, conversions, cost_per_result, roas, frequency) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE object_name=VALUES(object_name)");
+                            $stmt->execute([$r['client_id'], $r['level'], $r['object_id'], $r['object_name'], $r['date_start'], $r['date_stop'], $r['impressions'], $r['reach'], $r['clicks'], $r['spend'], $r['cpc'], $r['ctr'], $r['cpm'], $r['conversions'], $r['cost_per_result'], $r['roas'], $r['frequency']]);
+                        }
+                    } catch (Exception $ex) {
+                        error_log("SQLite migration to MySQL failed: " . $ex->getMessage());
+                    }
+                }
+            }
         } catch (Exception $e) {
-            // Ignore if already exists
+            error_log("ensureTables failed: " . $e->getMessage());
         }
     }
 
