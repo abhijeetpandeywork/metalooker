@@ -94,23 +94,26 @@ class MetaAPI {
             throw new Exception("Access token or Ad Account ID is missing.");
         }
 
-        $fields = [
-            'campaign_name',
-            'adset_name',
-            'ad_name',
-            'impressions',
-            'reach',
-            'clicks',
-            'spend',
-            'cpc',
-            'ctr',
-            'cpm',
-            'conversions',
-            'cost_per_result',
-            'frequency',
-            'actions',
-            'action_values'
+        $levelFields = [
+            'account' => [
+                'account_name', 'impressions', 'reach', 'clicks', 'spend',
+                'cpc', 'ctr', 'cpm', 'frequency', 'actions', 'action_values'
+            ],
+            'campaign' => [
+                'campaign_id', 'campaign_name', 'impressions', 'reach', 'clicks', 'spend',
+                'cpc', 'ctr', 'cpm', 'frequency', 'actions', 'action_values'
+            ],
+            'adset' => [
+                'campaign_id', 'campaign_name', 'adset_id', 'adset_name', 'impressions', 'reach',
+                'clicks', 'spend', 'cpc', 'ctr', 'cpm', 'frequency', 'actions', 'action_values'
+            ],
+            'ad' => [
+                'campaign_id', 'campaign_name', 'adset_id', 'adset_name', 'ad_id', 'ad_name',
+                'impressions', 'reach', 'clicks', 'spend', 'cpc', 'ctr', 'cpm', 'frequency', 'actions', 'action_values'
+            ]
         ];
+
+        $fields = $levelFields[$level] ?? $levelFields['account'];
 
         $params = [
             'fields'         => implode(',', $fields),
