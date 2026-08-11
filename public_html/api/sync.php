@@ -39,6 +39,7 @@ try {
     $stmt = $db->prepare("SELECT * FROM clients WHERE id = ? LIMIT 1");
     $stmt->execute([$clientId]);
     $client = $stmt->fetch();
+    $stmt->closeCursor();
 
     if (!$client) {
         echo json_encode(['success' => false, 'error' => 'Client account not found.']);

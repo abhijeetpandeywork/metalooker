@@ -63,6 +63,7 @@ function syncClientData(array $client): array {
         $checkStmt = $db->prepare("SELECT COUNT(*) as cnt FROM ad_data_cache WHERE client_id = ?");
         $checkStmt->execute([$clientId]);
         $hasData = ($checkStmt->fetch()['cnt'] ?? 0) > 0;
+        $checkStmt->closeCursor();
 
         $dateStop = (new DateTime())->modify('-1 day')->format('Y-m-d');
         if ($hasData) {
