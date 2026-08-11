@@ -315,24 +315,61 @@ $csrfToken = generateCsrfToken();
                         </div>
                         <div class="row">
                             <div class="col-6 mb-3">
-                                <label class="form-label text-muted small fw-semibold">Currency</label>
-                                <select name="currency" class="form-select shadow-sm">
-                                    <option value="INR" selected>INR (₹)</option>
-                                    <option value="USD">USD ($)</option>
-                                    <option value="AED">AED (AED)</option>
-                                    <option value="EUR">EUR (€)</option>
-                                    <option value="GBP">GBP (£)</option>
+                                <label class="form-label text-muted small fw-semibold">Primary Country</label>
+                                <select name="country_name" class="form-select shadow-sm">
+                                    <?php 
+                                    $allCountriesList = getGlobalCountriesList();
+                                    foreach ($allCountriesList as $cName => $cInfo): 
+                                    ?>
+                                        <option value="<?= e($cName) ?>" <?= $cName === 'India' ? 'selected' : '' ?>>
+                                            <?= e($cName) ?>
+                                        </option>
+                                    <?php endforeach; ?>
                                 </select>
                             </div>
                             <div class="col-6 mb-3">
-                                <label class="form-label text-muted small fw-semibold">Brand Color</label>
+                                <label class="form-label text-muted small fw-semibold">Currency</label>
+                                <select name="currency" class="form-select shadow-sm">
+                                    <option value="INR" selected>INR (₹ - Rupee)</option>
+                                    <option value="USD">USD ($ - Dollar)</option>
+                                    <option value="AED">AED (AED - Dirham)</option>
+                                    <option value="EUR">EUR (€ - Euro)</option>
+                                    <option value="GBP">GBP (£ - Pound)</option>
+                                    <option value="SAR">SAR (SAR - Riyal)</option>
+                                    <option value="QAR">QAR (QR - Riyal)</option>
+                                    <option value="KWD">KWD (KD - Dinar)</option>
+                                    <option value="OMR">OMR (OMR - Rial)</option>
+                                    <option value="BHD">BHD (BD - Dinar)</option>
+                                    <option value="CAD">CAD (CA$ - Dollar)</option>
+                                    <option value="AUD">AUD (A$ - Dollar)</option>
+                                    <option value="SGD">SGD (S$ - Dollar)</option>
+                                    <option value="MYR">MYR (RM - Ringgit)</option>
+                                    <option value="THB">THB (฿ - Baht)</option>
+                                    <option value="JPY">JPY (¥ - Yen)</option>
+                                    <option value="ZAR">ZAR (R - Rand)</option>
+                                    <option value="BRL">BRL (R$ - Real)</option>
+                                    <option value="MXN">MXN (Mex$ - Peso)</option>
+                                    <option value="EGP">EGP (E£ - Pound)</option>
+                                    <option value="PHP">PHP (₱ - Peso)</option>
+                                    <option value="IDR">IDR (Rp - Rupiah)</option>
+                                    <option value="VND">VND (₫ - Dong)</option>
+                                    <option value="PKR">PKR (Rs - Rupee)</option>
+                                    <option value="BDT">BDT (৳ - Taka)</option>
+                                    <option value="LKR">LKR (Rs - Rupee)</option>
+                                    <option value="CHF">CHF (CHF - Franc)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <label class="form-label text-muted small fw-semibold">Brand Color Accent</label>
                                 <input type="color" name="brand_color" class="form-control form-control-color w-100 shadow-sm" value="#0F2D55">
                             </div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label text-muted small fw-semibold">
-                                Target Lead / Deal Value (₹)
-                                <button type="button" class="info-popover-btn" data-bs-toggle="popover" title="Target Lead Value Guide" data-bs-content="<b>E-Commerce Accounts:</b> Leave default (₹500) or set to 0. Meta Pixel/CAPI automatically feeds exact sales numbers.<br><br><b>Lead Gen / WhatsApp Accounts:</b> Enter expected deal value per lead (e.g. ₹500.00) so ROAS can be calculated as (Leads * Target Value) / Ad Spend.">
+                                Target Lead / Deal Value (In Account Currency)
+                                <button type="button" class="info-popover-btn" data-bs-toggle="popover" title="Target Lead Value Guide" data-bs-content="<b>E-Commerce Accounts:</b> Leave default (500) or set to 0. Meta Pixel/CAPI automatically feeds exact sales numbers.<br><br><b>Lead Gen / WhatsApp Accounts:</b> Enter expected deal value per lead so ROAS can be calculated as (Leads * Target Value) / Ad Spend.">
                                     i
                                 </button>
                             </label>

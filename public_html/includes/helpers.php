@@ -150,3 +150,45 @@ function updateEnvFile(string $key, string $value): bool {
     }
     return $success;
 }
+
+/**
+ * Returns complete global country list with default ISO currency codes.
+ *
+ * @return array Map of country names to country code & currency
+ */
+function getGlobalCountriesList(): array {
+    return [
+        'India' => ['code' => 'IN', 'currency' => 'INR', 'symbol' => '₹'],
+        'United States' => ['code' => 'US', 'currency' => 'USD', 'symbol' => '$'],
+        'United Arab Emirates' => ['code' => 'AE', 'currency' => 'AED', 'symbol' => 'AED '],
+        'Saudi Arabia' => ['code' => 'SA', 'currency' => 'SAR', 'symbol' => 'SAR '],
+        'Qatar' => ['code' => 'QA', 'currency' => 'QAR', 'symbol' => 'QAR '],
+        'Kuwait' => ['code' => 'KW', 'currency' => 'KWD', 'symbol' => 'KWD '],
+        'Oman' => ['code' => 'OM', 'currency' => 'OMR', 'symbol' => 'OMR '],
+        'Bahrain' => ['code' => 'BH', 'currency' => 'BHD', 'symbol' => 'BHD '],
+        'United Kingdom' => ['code' => 'GB', 'currency' => 'GBP', 'symbol' => '£'],
+        'Canada' => ['code' => 'CA', 'currency' => 'CAD', 'symbol' => 'CA$'],
+        'Australia' => ['code' => 'AU', 'currency' => 'AUD', 'symbol' => 'A$'],
+        'Singapore' => ['code' => 'SG', 'currency' => 'SGD', 'symbol' => 'S$'],
+        'Malaysia' => ['code' => 'MY', 'currency' => 'MYR', 'symbol' => 'RM '],
+        'Thailand' => ['code' => 'TH', 'currency' => 'THB', 'symbol' => '฿'],
+        'Japan' => ['code' => 'JP', 'currency' => 'JPY', 'symbol' => '¥'],
+        'Germany' => ['code' => 'DE', 'currency' => 'EUR', 'symbol' => '€'],
+        'France' => ['code' => 'FR', 'currency' => 'EUR', 'symbol' => '€'],
+        'Italy' => ['code' => 'IT', 'currency' => 'EUR', 'symbol' => '€'],
+        'Spain' => ['code' => 'ES', 'currency' => 'EUR', 'symbol' => '€'],
+        'Netherlands' => ['code' => 'NL', 'currency' => 'EUR', 'symbol' => '€'],
+        'Switzerland' => ['code' => 'CH', 'currency' => 'CHF', 'symbol' => 'CHF '],
+        'South Africa' => ['code' => 'ZA', 'currency' => 'ZAR', 'symbol' => 'R '],
+        'Brazil' => ['code' => 'BR', 'currency' => 'BRL', 'symbol' => 'R$'],
+        'Mexico' => ['code' => 'MX', 'currency' => 'MXN', 'symbol' => 'Mex$'],
+        'Egypt' => ['code' => 'EG', 'currency' => 'EGP', 'symbol' => 'E£ '],
+        'Philippines' => ['code' => 'PH', 'currency' => 'PHP', 'symbol' => '₱'],
+        'Indonesia' => ['code' => 'ID', 'currency' => 'IDR', 'symbol' => 'Rp '],
+        'Vietnam' => ['code' => 'VN', 'currency' => 'VND', 'symbol' => '₫'],
+        'Pakistan' => ['code' => 'PK', 'currency' => 'PKR', 'symbol' => 'Rs '],
+        'Bangladesh' => ['code' => 'BD', 'currency' => 'BDT', 'symbol' => '৳'],
+        'Sri Lanka' => ['code' => 'LK', 'currency' => 'LKR', 'symbol' => 'Rs '],
+        'Nepal' => ['code' => 'NP', 'currency' => 'NPR', 'symbol' => 'NPR ']
+    ];
+}

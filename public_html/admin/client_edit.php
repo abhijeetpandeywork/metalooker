@@ -394,26 +394,36 @@ $csrfToken = generateCsrfToken();
                                          </select>
                                      </div>
                                  </div>
+                                  <div class="mb-3">
+                                      <label class="form-label text-muted small fw-semibold">
+                                          Primary Country / Region
+                                          <button type="button" class="info-popover-btn" data-bs-toggle="popover" title="Country" data-bs-content="Configures country localization and flag badge on the dashboard.">
+                                              i
+                                          </button>
+                                      </label>
+                                      <select name="country_name" class="form-select shadow-sm">
+                                          <?php 
+                                          $allCountriesList = getGlobalCountriesList();
+                                          $currentCountry = $client['country_name'] ?? 'India';
+                                          foreach ($allCountriesList as $cName => $cInfo): 
+                                          ?>
+                                              <option value="<?= e($cName) ?>" <?= $currentCountry === $cName ? 'selected' : '' ?>>
+                                                  <?= e($cName) ?> (<?= e($cInfo['currency']) ?>)
+                                              </option>
+                                          <?php endforeach; ?>
+                                      </select>
+                                      <input type="hidden" name="country_code" value="<?= e($client['country_code'] ?? 'IN') ?>">
+                                  </div>
                                  <div class="mb-3">
                                      <label class="form-label text-muted small fw-semibold">
-                                         Primary Country / Region
-                                         <button type="button" class="info-popover-btn" data-bs-toggle="popover" title="Country" data-bs-content="Configures country localization and flag badge on the dashboard.">
+                                         Target Lead / Deal Value (<?= e($client['currency'] ?? 'INR') ?>)
+                                         <button type="button" class="info-popover-btn" data-bs-toggle="popover" title="Target Lead Value" data-bs-content="Used to calculate ROAS for Lead Gen / WhatsApp campaigns without direct e-commerce pixel revenue: ROAS = (Leads * Target Value) / Ad Spend.">
                                              i
                                          </button>
                                      </label>
-                                     <input type="text" name="country_name" class="form-control shadow-sm" value="<?= e($client['country_name'] ?? 'India') ?>" placeholder="e.g. India, United States, UAE" required>
-                                     <input type="hidden" name="country_code" value="<?= e($client['country_code'] ?? 'IN') ?>">
+                                     <input type="number" step="0.01" min="0" name="target_lead_value" class="form-control shadow-sm" value="<?= e($client['target_lead_value'] ?? '500.00') ?>" required>
+                                     <small class="text-muted">Used for Lead Gen / WhatsApp ROAS calculations</small>
                                  </div>
-                                <div class="mb-3">
-                                    <label class="form-label text-muted small fw-semibold">
-                                        Target Lead / Deal Value (₹)
-                                        <button type="button" class="info-popover-btn" data-bs-toggle="popover" title="Target Lead Value" data-bs-content="Used to calculate ROAS for Lead Gen / WhatsApp campaigns without direct e-commerce pixel revenue: ROAS = (Leads * Target Value) / Ad Spend.">
-                                            i
-                                        </button>
-                                    </label>
-                                    <input type="number" step="0.01" min="0" name="target_lead_value" class="form-control shadow-sm" value="<?= e($client['target_lead_value'] ?? '500.00') ?>" required>
-                                    <small class="text-muted">Used for Lead Gen / WhatsApp ROAS calculations (Default: ₹500.00)</small>
-                                </div>
                                 <div class="mb-3">
                                     <label class="form-label text-muted small fw-semibold">
                                         Client Ad Account ID
