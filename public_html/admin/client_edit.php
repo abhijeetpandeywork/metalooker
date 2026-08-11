@@ -358,10 +358,18 @@ $csrfToken = generateCsrfToken();
                                         </label>
                                         <select name="currency" class="form-select shadow-sm">
                                             <option value="INR" <?= ($client['currency'] ?? 'INR') === 'INR' ? 'selected' : '' ?>>INR (₹)</option>
-                                            <option value="USD" <?= ($client['currency'] ?? '') === 'USD' ? 'selected' : '' ?>>USD ($)</option>
                                             <option value="AED" <?= ($client['currency'] ?? '') === 'AED' ? 'selected' : '' ?>>AED (AED)</option>
+                                            <option value="USD" <?= ($client['currency'] ?? '') === 'USD' ? 'selected' : '' ?>>USD ($)</option>
                                             <option value="EUR" <?= ($client['currency'] ?? '') === 'EUR' ? 'selected' : '' ?>>EUR (€)</option>
                                             <option value="GBP" <?= ($client['currency'] ?? '') === 'GBP' ? 'selected' : '' ?>>GBP (£)</option>
+                                            <option value="SAR" <?= ($client['currency'] ?? '') === 'SAR' ? 'selected' : '' ?>>SAR (Saudi Riyal)</option>
+                                            <option value="QAR" <?= ($client['currency'] ?? '') === 'QAR' ? 'selected' : '' ?>>QAR (Qatari Riyal)</option>
+                                            <option value="KWD" <?= ($client['currency'] ?? '') === 'KWD' ? 'selected' : '' ?>>KWD (Kuwaiti Dinar)</option>
+                                            <option value="OMR" <?= ($client['currency'] ?? '') === 'OMR' ? 'selected' : '' ?>>OMR (Omani Rial)</option>
+                                            <option value="BHD" <?= ($client['currency'] ?? '') === 'BHD' ? 'selected' : '' ?>>BHD (Bahraini Dinar)</option>
+                                            <option value="CAD" <?= ($client['currency'] ?? '') === 'CAD' ? 'selected' : '' ?>>CAD ($)</option>
+                                            <option value="AUD" <?= ($client['currency'] ?? '') === 'AUD' ? 'selected' : '' ?>>AUD ($)</option>
+                                            <option value="SGD" <?= ($client['currency'] ?? '') === 'SGD' ? 'selected' : '' ?>>SGD ($)</option>
                                         </select>
                                     </div>
                                 </div>
