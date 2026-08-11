@@ -122,8 +122,12 @@ try {
     } catch (Exception $eCol2) {}
 
     try {
-        $db->exec("UPDATE clients SET currency = 'AED', country_code = 'AE', country_name = 'United Arab Emirates' WHERE business_name LIKE '%Sky Line%' OR id = 6");
-    } catch (Exception $eCol4) {}
+        $db->exec("CREATE INDEX idx_client_level_dates ON ad_data_cache (client_id, level, date_start, date_stop)");
+    } catch (Exception $eIdx1) {}
+
+    try {
+        $db->exec("CREATE INDEX idx_client_dates ON ad_data_cache (client_id, date_start)");
+    } catch (Exception $eIdx2) {}
 
     // Seed dashboard_config for all active clients
     $allClients = $db->query("SELECT id FROM clients")->fetchAll();

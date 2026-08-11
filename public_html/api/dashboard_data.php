@@ -8,7 +8,12 @@
  * @package MetaPanel\API
  */
 
+if (!ob_start('ob_gzhandler')) {
+    ob_start();
+}
+
 header('Content-Type: application/json');
+header('Cache-Control: private, max-age=30');
 
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/db.php';
@@ -79,7 +84,8 @@ try {
             SUM(reach) as reach,
             SUM(clicks) as clicks,
             SUM(spend) as spend,
-            SUM(conversions) as conversions
+            SUM(conversions) as conversions,
+            AVG(CASE WHEN roas > 0 THEN roas ELSE NULL END) as avg_roas
         FROM ad_data_cache
         WHERE client_id = ? AND level = 'campaign'
         AND date_start >= ? AND date_start <= ?
@@ -92,22 +98,13 @@ try {
     $clicks      = (int)($kpisRaw['clicks'] ?? 0);
     $spend       = (float)($kpisRaw['spend'] ?? 0.0);
     $conversions = (int)($kpisRaw['conversions'] ?? 0);
+    $avgRoas     = (float)($kpisRaw['avg_roas'] ?? 0.0);
 
     $ctr = $impressions > 0 ? round(($clicks / $impressions) * 100, 2) : 0.0;
     $cpc = $clicks > 0 ? round($spend / $clicks, 2) : 0.0;
     $cpm = $impressions > 0 ? round(($spend / $impressions) * 1000, 2) : 0.0;
     $costPerResult = $conversions > 0 ? round($spend / $conversions, 2) : 0.0;
     $frequency = $reach > 0 ? round($impressions / $reach, 2) : 1.0;
-
-    // Fetch average ROAS
-    $roasStmt = $db->prepare("
-        SELECT AVG(roas) as avg_roas
-        FROM ad_data_cache
-        WHERE client_id = ? AND level = 'campaign'
-        AND date_start >= ? AND date_start <= ? AND roas > 0
-    ");
-    $roasStmt->execute([$clientId, $from, $to]);
-    $avgRoas = (float)($roasStmt->fetch()['avg_roas'] ?? 0.0);
 
     // 2. Preceding Comparison Period Range for Trend % Calculation
     $startDate = new DateTime($from);
