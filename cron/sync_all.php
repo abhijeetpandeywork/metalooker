@@ -240,6 +240,7 @@ function syncClientData(array $client): array {
         // Record success log
         $logStmt = $db->prepare("INSERT INTO sync_logs (client_id, status, rows_inserted) VALUES (?, 'success', ?)");
         $logStmt->execute([$clientId, $totalInserted]);
+        $logStmt->closeCursor();
 
         return [
             'status' => 'success',
@@ -251,6 +252,7 @@ function syncClientData(array $client): array {
         $errorMsg = $e->getMessage();
         $logStmt = $db->prepare("INSERT INTO sync_logs (client_id, status, rows_inserted, error_message) VALUES (?, 'error', 0, ?)");
         $logStmt->execute([$clientId, substr($errorMsg, 0, 500)]);
+        $logStmt->closeCursor();
 
         return [
             'status' => 'error',
@@ -269,6 +271,7 @@ if (php_sapi_name() === 'cli' || (isset($_SERVER['SCRIPT_FILENAME']) && basename
         $stmt = $db->prepare("SELECT * FROM clients WHERE active = 1 AND (meta_access_token IS NOT NULL OR 1=1)");
         $stmt->execute();
         $clients = $stmt->fetchAll();
+        $stmt->closeCursor();
 
         echo "Found " . count($clients) . " active client account(s) to process.\n";
 
