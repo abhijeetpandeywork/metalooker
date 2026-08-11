@@ -40,7 +40,15 @@ function syncClientData(array $client): array {
     $clientId = (int)$client['id'];
 
     $plainToken = TokenManager::decrypt($client['meta_access_token'] ?? '');
-    $adAccountId = $client['meta_ad_account_id'] ?? '';
+    $adAccountId = trim($client['meta_ad_account_id'] ?? '');
+
+    if (empty($adAccountId) && !MOCK_META_API) {
+        return [
+            'status' => 'error',
+            'rows'   => 0,
+            'error'  => 'Missing Meta Ad Account ID for client ' . ($client['business_name'] ?? '') . '. Please configure Ad Account ID in Client Config.'
+        ];
+    }
 
     if (empty($plainToken) && !MOCK_META_API) {
         return [

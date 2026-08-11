@@ -26,13 +26,21 @@ function e(?string $string): string {
  */
 function formatCurrency($amount, string $currency = 'INR'): string {
     $val = (float)$amount;
-    $symbol = match (strtoupper($currency)) {
+    $curr = strtoupper(trim($currency));
+    $symbol = match ($curr) {
         'INR' => '₹',
-        'USD' => '$',
+        'USD', 'CAD', 'AUD', 'NZD', 'SGD' => '$',
         'EUR' => '€',
         'GBP' => '£',
         'AED' => 'AED ',
-        default => strtoupper($currency) . ' '
+        'SAR' => 'SAR ',
+        'QAR' => 'QAR ',
+        'KWD' => 'KWD ',
+        'OMR' => 'OMR ',
+        'BHD' => 'BHD ',
+        'JPY' => '¥',
+        'ZAR' => 'R ',
+        default => $curr . ' '
     };
 
     return $symbol . number_format($val, 2, '.', ',');

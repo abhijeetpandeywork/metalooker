@@ -379,13 +379,21 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function getCurrencySymbol(curr) {
-        switch((curr || '').toUpperCase()) {
+        const c = (curr || '').toUpperCase().trim();
+        switch(c) {
             case 'INR': return '₹';
-            case 'USD': return '$';
+            case 'USD': case 'CAD': case 'AUD': case 'NZD': case 'SGD': return '$';
             case 'EUR': return '€';
             case 'GBP': return '£';
             case 'AED': return 'AED ';
-            default: return curr + ' ';
+            case 'SAR': return 'SAR ';
+            case 'QAR': return 'QAR ';
+            case 'KWD': return 'KWD ';
+            case 'OMR': return 'OMR ';
+            case 'BHD': return 'BHD ';
+            case 'JPY': return '¥';
+            case 'ZAR': return 'R ';
+            default: return c ? (c + ' ') : '₹';
         }
     }
 
