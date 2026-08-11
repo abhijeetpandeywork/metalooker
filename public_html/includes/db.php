@@ -63,7 +63,7 @@ class Database {
                 if (file_exists($sqlitePath)) {
                     @chmod($sqlitePath, 0777);
                 }
-                $sqliteDsn = "sqlite:" . $sqlitePath;
+                $sqliteDsn = "sqlite:file:" . $sqlitePath . "?nolock=1";
 
                 self::$instance = new PDO($sqliteDsn, null, null, $options);
                 self::$instance->exec("PRAGMA foreign_keys = ON;");
