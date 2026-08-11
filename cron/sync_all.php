@@ -85,14 +85,7 @@ function syncClientData(array $client): array {
 
         $totalInserted = 0;
 
-        // Wrap database deletion and insertion in an atomic transaction
-        $db->beginTransaction();
-
-        try {
-            $cleanStmt = $db->prepare("DELETE FROM ad_data_cache WHERE client_id = ? AND date_start >= ? AND date_start <= ?");
-            $cleanStmt->execute([$clientId, $dateStart, $dateStop]);
-
-            $driver = $db->getAttribute(PDO::ATTR_DRIVER_NAME);
+        $driver = $db->getAttribute(PDO::ATTR_DRIVER_NAME);
             if ($driver === 'sqlite') {
                 $upsertStmt = $db->prepare("
                     INSERT OR REPLACE INTO ad_data_cache (
@@ -230,12 +223,6 @@ function syncClientData(array $client): array {
                     $totalInserted++;
                 }
             }
-
-            $db->commit();
-        } catch (Exception $txEx) {
-            $db->rollBack();
-            throw $txEx;
-        }
 
         // Record success log
         $logStmt = $db->prepare("INSERT INTO sync_logs (client_id, status, rows_inserted) VALUES (?, 'success', ?)");
