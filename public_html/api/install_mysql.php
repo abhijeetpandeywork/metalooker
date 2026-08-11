@@ -105,9 +105,18 @@ try {
 
     $db->exec("SET FOREIGN_KEY_CHECKS = 1;");
 
-    // Seed Super Admin User
-    $adminHash = password_hash('Change@123', PASSWORD_BCRYPT, ['cost' => 12]);
-    $db->exec("INSERT INTO users (id, name, email, password_hash, role) VALUES (1, 'Digital Rubix Admin', 'admin@digitalrubix.com', '{$adminHash}', 'super_admin') ON DUPLICATE KEY UPDATE name=VALUES(name)");
+    // Seed default clients if clients table is empty
+    $clientCnt = (int)($db->query("SELECT COUNT(*) as cnt FROM clients")->fetch()['cnt'] ?? 0);
+    if ($clientCnt === 0) {
+        // Seed Bagnomy, Sky Line Crest, J Square from local definitions
+        $db->exec("
+            INSERT INTO clients (id, user_id, business_name, brand_color, currency, meta_ad_account_id, meta_access_token) VALUES
+            (2, 1, 'Bagnomy', '#0F2D55', 'INR', 'act_1067216668798544', 'EAAP9wfZCq1R0BO...'),
+            (3, 1, 'Sky Line Crest', '#1E3A8A', 'INR', 'act_1196144885237722', 'EAAP9wfZCq1R0BO...'),
+            (4, 1, 'J Square', '#0F2D55', 'INR', 'act_567472012903704', 'EAAP9wfZCq1R0BO...')
+            ON DUPLICATE KEY UPDATE business_name=VALUES(business_name);
+        ");
+    }
 
     // Automatically migrate clients & cache data from local SQLite file if present
     $sqliteFile = __DIR__ . '/../includes/storage/metapanel.sqlite';
