@@ -123,21 +123,25 @@ try {
     $migratedClients = 0;
     $migratedRows = 0;
     if (file_exists($sqliteFile)) {
-        $sPdo = new PDO("sqlite:" . $sqliteFile);
-        $sPdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+        try {
+            $sPdo = new PDO("sqlite:" . $sqliteFile);
+            $sPdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
 
-        $clients = $sPdo->query("SELECT * FROM clients")->fetchAll();
-        foreach ($clients as $c) {
-            $stmt = $db->prepare("INSERT INTO clients (id, user_id, business_name, logo_path, brand_color, currency, meta_ad_account_id, meta_access_token, token_expires_at, active, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE business_name=VALUES(business_name)");
-            $stmt->execute([$c['id'], $c['user_id'], $c['business_name'], $c['logo_path'], $c['brand_color'], $c['currency'], $c['meta_ad_account_id'], $c['meta_access_token'], $c['token_expires_at'], $c['active'], $c['created_at']]);
-            $migratedClients++;
-        }
+            $clients = $sPdo->query("SELECT * FROM clients")->fetchAll();
+            foreach ($clients as $c) {
+                $stmt = $db->prepare("INSERT INTO clients (id, user_id, business_name, logo_path, brand_color, currency, meta_ad_account_id, meta_access_token, token_expires_at, active, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE business_name=VALUES(business_name)");
+                $stmt->execute([$c['id'], $c['user_id'], $c['business_name'], $c['logo_path'], $c['brand_color'], $c['currency'], $c['meta_ad_account_id'], $c['meta_access_token'], $c['token_expires_at'], $c['active'], $c['created_at']]);
+                $migratedClients++;
+            }
 
-        $cache = $sPdo->query("SELECT * FROM ad_data_cache")->fetchAll();
-        foreach ($cache as $r) {
-            $stmt = $db->prepare("INSERT INTO ad_data_cache (client_id, level, object_id, object_name, date_start, date_stop, impressions, reach, clicks, spend, cpc, ctr, cpm, conversions, cost_per_result, roas, frequency) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE object_name=VALUES(object_name)");
-            $stmt->execute([$r['client_id'], $r['level'], $r['object_id'], $r['object_name'], $r['date_start'], $r['date_stop'], $r['impressions'], $r['reach'], $r['clicks'], $r['spend'], $r['cpc'], $r['ctr'], $r['cpm'], $r['conversions'], $r['cost_per_result'], $r['roas'], $r['frequency']]);
-            $migratedRows++;
+            $cache = $sPdo->query("SELECT * FROM ad_data_cache")->fetchAll();
+            foreach ($cache as $r) {
+                $stmt = $db->prepare("INSERT INTO ad_data_cache (client_id, level, object_id, object_name, date_start, date_stop, impressions, reach, clicks, spend, cpc, ctr, cpm, conversions, cost_per_result, roas, frequency) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE object_name=VALUES(object_name)");
+                $stmt->execute([$r['client_id'], $r['level'], $r['object_id'], $r['object_name'], $r['date_start'], $r['date_stop'], $r['impressions'], $r['reach'], $r['clicks'], $r['spend'], $r['cpc'], $r['ctr'], $r['cpm'], $r['conversions'], $r['cost_per_result'], $r['roas'], $r['frequency']]);
+                $migratedRows++;
+            }
+        } catch (Exception $migEx) {
+            error_log("SQLite migration ignored: " . $migEx->getMessage());
         }
     }
 
