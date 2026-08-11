@@ -26,9 +26,15 @@ if ($role === 'super_admin') {
 
     $thirtyDaysAgo = (new DateTime())->modify('-30 days')->format('Y-m-d');
 
-    $spendStmt = $db->prepare("SELECT SUM(spend) as total_spend FROM ad_data_cache WHERE level = 'campaign' AND date_start >= ?");
+    $spendStmt = $db->prepare("
+        SELECT c.currency, SUM(adc.spend) as cat_spend
+        FROM ad_data_cache adc
+        JOIN clients c ON c.id = adc.client_id
+        WHERE adc.level = 'campaign' AND adc.date_start >= ? AND c.active = 1
+        GROUP BY c.currency
+    ");
     $spendStmt->execute([$thirtyDaysAgo]);
-    $totalSpend = (float)($spendStmt->fetch()['total_spend'] ?? 0.0);
+    $spendByCurrency = $spendStmt->fetchAll();
 } else {
     $clientCountStmt = $db->prepare("
         SELECT COUNT(*) as cnt
@@ -41,13 +47,27 @@ if ($role === 'super_admin') {
 
     $thirtyDaysAgo = (new DateTime())->modify('-30 days')->format('Y-m-d');
     $spendStmt = $db->prepare("
-        SELECT SUM(adc.spend) as total_spend
+        SELECT c.currency, SUM(adc.spend) as cat_spend
         FROM ad_data_cache adc
-        JOIN team_client_access tca ON adc.client_id = tca.client_id
-        WHERE tca.user_id = ? AND adc.level = 'campaign' AND adc.date_start >= ?
+        JOIN clients c ON c.id = adc.client_id
+        JOIN team_client_access tca ON c.id = tca.client_id
+        WHERE tca.user_id = ? AND adc.level = 'campaign' AND adc.date_start >= ? AND c.active = 1
+        GROUP BY c.currency
     ");
     $spendStmt->execute([$userId, $thirtyDaysAgo]);
-    $totalSpend = (float)($spendStmt->fetch()['total_spend'] ?? 0.0);
+    $spendByCurrency = $spendStmt->fetchAll();
+}
+
+$totalSpendInrEquiv = 0.0;
+$currencyBreakdowns = [];
+
+foreach ($spendByCurrency as $row) {
+    $curr = strtoupper($row['currency'] ?: 'INR');
+    $val  = (float)$row['cat_spend'];
+    if ($val > 0) {
+        $currencyBreakdowns[$curr] = $val;
+        $totalSpendInrEquiv += convertToInr($val, $curr);
+    }
 }
 
 // Fetch Recent Activity Audit Log
@@ -182,13 +202,25 @@ $activeClients = $clientsStmt->fetchAll();
                             <div>
                                 <span class="text-muted small fw-semibold text-uppercase font-heading">
                                     Total Ad Spend Managed (30 Days)
-                                    <button type="button" class="info-popover-btn" data-bs-toggle="popover" title="Managed Spend" data-bs-content="Cumulative ad spend tracked across all connected client Meta accounts in the last 30 days.">
+                                    <button type="button" class="info-popover-btn" data-bs-toggle="popover" title="Multi-Currency Spend" data-bs-content="Calculates cumulative ad spend across multi-currency client accounts converted to INR base rate for accurate agency financial reporting.">
                                         i
                                     </button>
                                 </span>
-                                <h2 class="fw-bold m-0 text-success mt-1 font-heading"><?= formatCurrency($totalSpend, 'INR') ?></h2>
+                                <h2 class="fw-bold m-0 text-success mt-1 font-heading">
+                                    <?= formatCurrency($totalSpendInrEquiv, 'INR') ?> 
+                                    <span class="fs-6 text-muted font-normal" style="font-size: 13px; font-weight: 500;">(Normalized INR)</span>
+                                </h2>
+                                <?php if (!empty($currencyBreakdowns)): ?>
+                                    <div class="mt-2 d-flex flex-wrap gap-1">
+                                        <?php foreach ($currencyBreakdowns as $cCode => $cVal): ?>
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 11px;">
+                                                <?= formatCurrency($cVal, $cCode) ?>
+                                            </span>
+                                        <?php endforeach; ?>
+                                    </div>
+                                <?php endif; ?>
                             </div>
-                            <div class="p-3 bg-success bg-opacity-10 text-success rounded-3">
+                            <div class="p-3 bg-success bg-opacity-10 text-success rounded-3 align-self-start">
                                 <i class="fa-solid fa-money-bill-trend-up fs-2"></i>
                             </div>
                         </div>

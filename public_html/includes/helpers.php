@@ -209,3 +209,45 @@ function getCountryNameByCode(string $code): string {
     }
     return 'India';
 }
+
+/**
+ * Converts monetary amount from target currency to INR base representation.
+ *
+ * @param float $amount Amount in source currency
+ * @param string $currency 3-letter ISO Currency Code
+ * @return float Equivalent amount in INR
+ */
+function convertToInr(float $amount, string $currency): float {
+    $c = strtoupper(trim($currency));
+    $rates = [
+        'INR' => 1.0,
+        'USD' => 84.50,
+        'EUR' => 92.00,
+        'GBP' => 108.00,
+        'AED' => 23.00,
+        'SAR' => 22.50,
+        'QAR' => 23.20,
+        'KWD' => 275.00,
+        'OMR' => 219.00,
+        'BHD' => 224.00,
+        'CAD' => 62.00,
+        'AUD' => 55.00,
+        'SGD' => 63.00,
+        'NZD' => 51.00,
+        'MYR' => 19.00,
+        'THB' => 2.40,
+        'JPY' => 0.55,
+        'ZAR' => 4.60,
+        'BRL' => 15.20,
+        'MXN' => 4.30,
+        'EGP' => 1.75,
+        'PHP' => 1.48,
+        'IDR' => 0.0055,
+        'VND' => 0.0034,
+        'PKR' => 0.30,
+        'BDT' => 0.72,
+        'LKR' => 0.28,
+        'NPR' => 0.63
+    ];
+    return $amount * ($rates[$c] ?? 1.0);
+}
