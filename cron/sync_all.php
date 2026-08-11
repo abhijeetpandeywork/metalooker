@@ -77,6 +77,29 @@ function syncClientData(array $client): array {
         }
 
         $metaApi = new MetaAPI($plainToken, $adAccountId);
+
+        // Auto-Detect & Auto-Sync Meta Ad Account Currency & Country
+        try {
+            $metaMeta = $metaApi->getAccountMetadata();
+            if (!empty($metaMeta['currency'])) {
+                $metaCurr = $metaMeta['currency'];
+                $metaCCode = $metaMeta['business_country_code'] ?? 'IN';
+                $metaCName = getCountryNameByCode($metaCCode);
+
+                $db->prepare("
+                    UPDATE clients 
+                    SET currency = ?, country_code = ?, country_name = ? 
+                    WHERE id = ?
+                ")->execute([$metaCurr, $metaCCode, $metaCName, $clientId]);
+
+                $client['currency'] = $metaCurr;
+                $client['country_code'] = $metaCCode;
+                $client['country_name'] = $metaCName;
+            }
+        } catch (Exception $mEx) {
+            // Non-blocking: fallback to existing client settings
+        }
+
         $levels = ['account', 'campaign', 'adset', 'ad'];
         $allInsights = [];
 

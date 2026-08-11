@@ -192,3 +192,20 @@ function getGlobalCountriesList(): array {
         'Nepal' => ['code' => 'NP', 'currency' => 'NPR', 'symbol' => 'NPR ']
     ];
 }
+
+/**
+ * Maps 2-letter ISO country code to human readable country name.
+ *
+ * @param string $code 2-letter ISO country code
+ * @return string Country Name
+ */
+function getCountryNameByCode(string $code): string {
+    $cCode = strtoupper(trim($code));
+    $list = getGlobalCountriesList();
+    foreach ($list as $cName => $cInfo) {
+        if ($cInfo['code'] === $cCode) {
+            return $cName;
+        }
+    }
+    return 'India';
+}

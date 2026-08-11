@@ -149,6 +149,36 @@ class MetaAPI {
     }
 
     /**
+     * Fetches currency, country code, timezone, and business name for the connected Meta Ad Account.
+     *
+     * @return array Account metadata array
+     * @throws Exception
+     */
+    public function getAccountMetadata(): array {
+        if (MOCK_META_API) {
+            return [
+                'id'                    => $this->adAccountId,
+                'name'                  => 'Bagnomy Meta Ads',
+                'currency'              => 'INR',
+                'business_country_code' => 'IN',
+                'timezone_name'         => 'Asia/Kolkata'
+            ];
+        }
+
+        $res = $this->makeApiCall($this->adAccountId, [
+            'fields' => 'id,name,currency,business_country_code,timezone_name'
+        ]);
+
+        return [
+            'id'                    => $res['id'] ?? $this->adAccountId,
+            'name'                  => $res['name'] ?? '',
+            'currency'              => strtoupper($res['currency'] ?? 'INR'),
+            'business_country_code' => strtoupper($res['business_country_code'] ?? 'IN'),
+            'timezone_name'         => $res['timezone_name'] ?? 'Asia/Kolkata'
+        ];
+    }
+
+    /**
      * Exchanges short-lived User Access Token for long-lived (60-day) token.
      *
      * @param string $shortToken Short-lived OAuth access token

@@ -43,6 +43,44 @@ if (!$client) {
 $successMessage = $_GET['success'] ?? null;
 $errorMessage = $_GET['error'] ?? null;
 
+// Handle Auto-Detect Meta Settings Action
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'autodetect_meta') {
+    $csrfToken = $_POST['csrf_token'] ?? '';
+    if (!verifyCsrfToken($csrfToken)) {
+        $errorMessage = "Security validation failed.";
+    } else {
+        $metaAdAccountId = $client['meta_ad_account_id'];
+        $metaTokenEnc = $client['meta_access_token'];
+        $plainToken = !empty($metaTokenEnc) ? TokenManager::decrypt($metaTokenEnc) : '';
+
+        if (empty($metaAdAccountId) || (empty($plainToken) && !MOCK_META_API)) {
+            $errorMessage = "Meta Ad Account ID or Access Token is missing. Please connect Meta Account first.";
+        } else {
+            try {
+                $metaApi = new MetaAPI($plainToken, $metaAdAccountId);
+                $metaMeta = $metaApi->getAccountMetadata();
+                if (!empty($metaMeta['currency'])) {
+                    $metaCurr  = $metaMeta['currency'];
+                    $metaCCode = $metaMeta['business_country_code'] ?? 'IN';
+                    $metaCName = getCountryNameByCode($metaCCode);
+
+                    $db->prepare("
+                        UPDATE clients 
+                        SET currency = ?, country_code = ?, country_name = ? 
+                        WHERE id = ?
+                    ")->execute([$metaCurr, $metaCCode, $metaCName, $clientId]);
+
+                    $msg = "Auto-detected from Meta API: Currency = {$metaCurr}, Primary Country = {$metaCName}.";
+                    header("Location: " . APP_URL . "/admin/client_edit.php?id={$clientId}&success=" . urlencode($msg));
+                    exit;
+                }
+            } catch (Exception $eAuto) {
+                $errorMessage = "Auto-detection failed: " . $eAuto->getMessage();
+            }
+        }
+    }
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $csrfToken = $_POST['csrf_token'] ?? '';
     if (!verifyCsrfToken($csrfToken)) {
@@ -306,7 +344,14 @@ $csrfToken = generateCsrfToken();
                             <p class="mb-1"><strong>Ad Account ID:</strong> <code><?= e($client['meta_ad_account_id'] ?: 'Not Connected') ?></code></p>
                             <p class="text-muted small mb-0">Token Expiry: <?= e($client['token_expires_at'] ? date('F j, Y g:i A', strtotime($client['token_expires_at'])) : 'N/A') ?></p>
                         </div>
-                        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                        <div class="col-md-6 text-md-end mt-3 mt-md-0 d-flex gap-2 justify-content-md-end flex-wrap">
+                            <form method="POST" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="<?= e($csrfToken) ?>">
+                                <input type="hidden" name="action" value="autodetect_meta">
+                                <button type="submit" class="btn btn-outline-primary shadow-sm font-heading" title="Auto-fetches currency and country from Meta Ad Account">
+                                    <i class="fa-solid fa-wand-magic-sparkles me-1"></i> Auto-Detect Meta Settings
+                                </button>
+                            </form>
                             <?php if (MOCK_META_API): ?>
                                 <a href="<?= APP_URL ?>/oauth_callback.php?state=<?= $oauthState ?>&code=mock_code" class="btn btn-primary shadow-sm font-heading">
                                     <i class="fa-brands fa-facebook me-1"></i> Connect Meta Account (Mock)
