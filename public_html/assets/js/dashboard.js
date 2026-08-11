@@ -1,12 +1,16 @@
 /**
- * MetaPanel Dashboard Engine JavaScript
- * Handles AJAX data loading, Chart.js rendering, Flatpickr date selection,
- * table dynamic population, and sorting.
+ * Digital Rubix MetaPanel — Interactive Frontend Engine
+ * Theme Switching, Popover Information Tooltips, AJAX Data Handling,
+ * Real-time Table Searching, and Visual Charting.
  */
 
 document.addEventListener('DOMContentLoaded', function() {
     let spendChartInstance = null;
     let impClickChartInstance = null;
+
+    let campaignsData = [];
+    let adsetsData = [];
+    let adsData = [];
 
     const clientIdInput = document.getElementById('meta-client-id');
     const currencyInput = document.getElementById('meta-currency');
@@ -15,6 +19,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
     let currentFrom = '';
     let currentTo = '';
+
+    // Initialize Theme Mode (Default: Light)
+    initThemeEngine();
+
+    // Initialize Popovers & Tooltips
+    initInfoPopovers();
+
+    // Search Input Event Listener
+    const tableSearchInput = document.getElementById('table-search-input');
+    if (tableSearchInput) {
+        tableSearchInput.addEventListener('input', function() {
+            const query = this.value.toLowerCase().trim();
+            filterAndRenderTables(query);
+        });
+    }
 
     // Initialize Flatpickr Date Picker
     const fp = flatpickr("#date-range-picker", {
@@ -33,7 +52,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Preset Button Listeners
+    // Preset Date Buttons
     document.querySelectorAll('.btn-preset-date').forEach(button => {
         button.addEventListener('click', function() {
             document.querySelectorAll('.btn-preset-date').forEach(b => b.classList.remove('active', 'btn-primary'));
@@ -59,72 +78,96 @@ document.addEventListener('DOMContentLoaded', function() {
     fetchDashboardData(clientId, currentFrom, currentTo);
 
     /**
-     * Calculates YYYY-MM-DD bounds for presets
+     * Initializes Theme (Light/Dark) from LocalStorage
      */
-    function calculatePresetDates(preset) {
-        const today = new Date();
-        const yesterday = new Date(today);
-        yesterday.setDate(yesterday.getDate() - 1);
+    function initThemeEngine() {
+        const savedTheme = localStorage.getItem('metapanel_theme') || 'light';
+        document.documentElement.setAttribute('data-bs-theme', savedTheme);
+        updateThemeToggleBtn(savedTheme);
 
-        let start = new Date(yesterday);
-        let end = new Date(yesterday);
+        document.querySelectorAll('.btn-theme-toggle').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const current = document.documentElement.getAttribute('data-bs-theme');
+                const next = current === 'dark' ? 'light' : 'dark';
+                document.documentElement.setAttribute('data-bs-theme', next);
+                localStorage.setItem('metapanel_theme', next);
+                updateThemeToggleBtn(next);
 
-        if (preset === 'last_7') {
-            start.setDate(end.getDate() - 6);
-        } else if (preset === 'last_14') {
-            start.setDate(end.getDate() - 13);
-        } else if (preset === 'this_month') {
-            start = new Date(today.getFullYear(), today.getMonth(), 1);
-            end = today;
-        } else if (preset === 'last_month') {
-            start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-            end = new Date(today.getFullYear(), today.getMonth(), 0);
-        } else { // last_30
-            start.setDate(end.getDate() - 29);
-        }
-
-        return {
-            start: start.toISOString().slice(0, 10),
-            end: end.toISOString().slice(0, 10)
-        };
+                // Refresh charts if rendered
+                if (spendChartInstance && campaignsData.length) {
+                    renderSpendLineChart(dailySeriesCache);
+                    renderImpClickBarChart(campaignsData);
+                }
+            });
+        });
     }
+
+    function updateThemeToggleBtn(theme) {
+        document.querySelectorAll('.btn-theme-toggle').forEach(btn => {
+            if (theme === 'dark') {
+                btn.innerHTML = '<i class="fa-solid fa-sun text-warning me-1"></i> Light Mode';
+                btn.className = 'btn btn-sm btn-outline-warning btn-theme-toggle';
+            } else {
+                btn.innerHTML = '<i class="fa-solid fa-moon me-1"></i> Dark Mode';
+                btn.className = 'btn btn-sm btn-outline-dark btn-theme-toggle';
+            }
+        });
+    }
+
+    /**
+     * Initializes Bootstrap Popovers for Info Buttons
+     */
+    function initInfoPopovers() {
+        const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]');
+        [...popoverTriggerList].map(popoverTriggerEl => new bootstrap.Popover(popoverTriggerEl, {
+            trigger: 'hover focus',
+            html: true
+        }));
+    }
+
+    let dailySeriesCache = [];
 
     /**
      * Fetches analytics payload from backend API
      */
     function fetchDashboardData(cId, from, to) {
-        showLoadingState();
-
         const url = `${window.APP_URL}/api/dashboard_data.php?client_id=${cId}&from=${from}&to=${to}`;
 
         fetch(url)
             .then(response => response.json())
             .then(data => {
                 if (data.error) {
-                    alert('Error: ' + data.error);
+                    alert('Notice: ' + data.error);
                     return;
                 }
+                campaignsData = data.campaigns || [];
+                adsetsData = data.adsets || [];
+                adsData = data.ads || [];
+                dailySeriesCache = data.chart_daily || [];
+
                 updateKpiCards(data.kpis, currency);
-                renderSpendLineChart(data.chart_daily);
-                renderImpClickBarChart(data.campaigns);
-                populateTable('campaigns-table-body', data.campaigns, 'campaign');
-                populateTable('adsets-table-body', data.adsets, 'adset');
-                populateTable('ads-table-body', data.ads, 'ad');
+                renderSpendLineChart(dailySeriesCache);
+                renderImpClickBarChart(campaignsData);
+
+                const currentSearch = tableSearchInput ? tableSearchInput.value.toLowerCase().trim() : '';
+                filterAndRenderTables(currentSearch);
             })
             .catch(err => {
                 console.error('Failed to load dashboard data:', err);
-            })
-            .finally(() => {
-                hideLoadingState();
             });
     }
 
-    function showLoadingState() {
-        document.querySelectorAll('.kpi-value').forEach(el => el.classList.add('opacity-50'));
-    }
+    /**
+     * Filters breakdown tables based on search query
+     */
+    function filterAndRenderTables(query) {
+        const filteredCampaigns = campaignsData.filter(c => (c.name || '').toLowerCase().includes(query));
+        const filteredAdsets = adsetsData.filter(a => (a.name || '').toLowerCase().includes(query));
+        const filteredAds = adsData.filter(a => (a.name || '').toLowerCase().includes(query));
 
-    function hideLoadingState() {
-        document.querySelectorAll('.kpi-value').forEach(el => el.classList.remove('opacity-50'));
+        populateTable('campaigns-table-body', filteredCampaigns, 'campaign');
+        populateTable('adsets-table-body', filteredAdsets, 'adset');
+        populateTable('ads-table-body', filteredAds, 'ad');
     }
 
     /**
@@ -173,7 +216,9 @@ document.addEventListener('DOMContentLoaded', function() {
             spendChartInstance.destroy();
         }
 
-        const brandColor = getComputedStyle(document.documentElement).getPropertyValue('--brand-color').trim() || '#0F2D55';
+        const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+        const strokeColor = isDark ? '#38bdf8' : '#3b82f6';
+        const gridColor = isDark ? '#273553' : '#e2e8f0';
 
         spendChartInstance = new Chart(ctx, {
             type: 'line',
@@ -182,8 +227,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 datasets: [{
                     label: 'Daily Spend',
                     data: dataSpend,
-                    borderColor: brandColor,
-                    backgroundColor: 'rgba(15, 45, 85, 0.1)',
+                    borderColor: strokeColor,
+                    backgroundColor: isDark ? 'rgba(56, 189, 248, 0.15)' : 'rgba(59, 130, 246, 0.12)',
                     fill: true,
                     tension: 0.35,
                     borderWidth: 3,
@@ -195,17 +240,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        mode: 'index',
-                        intersect: false
-                    }
+                    legend: { display: false }
                 },
                 scales: {
                     x: { grid: { display: false } },
                     y: {
                         beginAtZero: true,
-                        grid: { color: '#f3f4f6' }
+                        grid: { color: gridColor }
                     }
                 }
             }
@@ -269,7 +310,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!tbody) return;
 
         if (!rows || rows.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4">No ad data available for selected date range.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4"><i class="fa-regular fa-folder-open me-2 fs-5"></i> No metrics found matching search query or date range.</td></tr>`;
             return;
         }
 
@@ -279,14 +320,14 @@ document.addEventListener('DOMContentLoaded', function() {
         rows.forEach(r => {
             html += `
                 <tr>
-                    <td class="fw-semibold text-dark">${escapeHtml(r.name)}</td>
+                    <td class="fw-semibold">${escapeHtml(r.name)}</td>
                     <td>${formatNum(r.impressions, 0)}</td>
                     <td>${formatNum(r.clicks, 0)}</td>
-                    <td>${formatNum(r.ctr, 2)}%</td>
+                    <td><span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25">${formatNum(r.ctr, 2)}%</span></td>
                     <td>${sym}${formatNum(r.cpc, 2)}</td>
                     <td class="fw-bold">${sym}${formatNum(r.spend, 2)}</td>
                     <td>${formatNum(r.conversions, 0)}</td>
-                    <td><span class="badge bg-light text-dark border">${formatNum(r.roas, 2)}x</span></td>
+                    <td><span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">${formatNum(r.roas, 2)}x</span></td>
                 </tr>
             `;
         });
@@ -294,19 +335,32 @@ document.addEventListener('DOMContentLoaded', function() {
         tbody.innerHTML = html;
     }
 
-    // Export Handlers
-    const btnExportCsv = document.getElementById('btn-export-csv');
-    if (btnExportCsv) {
-        btnExportCsv.addEventListener('click', function() {
-            window.location.href = `${window.APP_URL}/api/export_csv.php?client_id=${clientId}&from=${currentFrom}&to=${currentTo}`;
-        });
-    }
+    function calculatePresetDates(preset) {
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
 
-    const btnExportPdf = document.getElementById('btn-export-pdf');
-    if (btnExportPdf) {
-        btnExportPdf.addEventListener('click', function() {
-            window.open(`${window.APP_URL}/api/export_pdf.php?client_id=${clientId}&from=${currentFrom}&to=${currentTo}`, '_blank');
-        });
+        let start = new Date(yesterday);
+        let end = new Date(yesterday);
+
+        if (preset === 'last_7') {
+            start.setDate(end.getDate() - 6);
+        } else if (preset === 'last_14') {
+            start.setDate(end.getDate() - 13);
+        } else if (preset === 'this_month') {
+            start = new Date(today.getFullYear(), today.getMonth(), 1);
+            end = today;
+        } else if (preset === 'last_month') {
+            start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+            end = new Date(today.getFullYear(), today.getMonth(), 0);
+        } else {
+            start.setDate(end.getDate() - 29);
+        }
+
+        return {
+            start: start.toISOString().slice(0, 10),
+            end: end.toISOString().slice(0, 10)
+        };
     }
 
     function formatNum(num, decimals) {

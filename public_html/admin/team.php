@@ -58,11 +58,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         try {
             $db->beginTransaction();
 
-            // Clear existing client assignments
             $delStmt = $db->prepare("DELETE FROM team_client_access WHERE user_id = ?");
             $delStmt->execute([$targetUserId]);
 
-            // Re-insert selected assignments
             if (!empty($clientIds) && is_array($clientIds)) {
                 $insStmt = $db->prepare("INSERT INTO team_client_access (user_id, client_id) VALUES (?, ?)");
                 foreach ($clientIds as $cId) {
@@ -98,7 +96,7 @@ while ($row = $tcaStmt->fetch()) {
 $csrfToken = generateCsrfToken();
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -108,24 +106,23 @@ $csrfToken = generateCsrfToken();
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/style.css">
 </head>
-<body class="admin-body">
-    <div class="d-flex">
+<body>
+    <div class="d-flex admin-wrapper">
         <!-- Sidebar Navigation -->
         <div class="admin-sidebar p-3 text-white">
             <div class="d-flex align-items-center mb-4">
-                <i class="fa-solid fa-chart-line fs-3 text-primary me-2"></i>
-                <h5 class="m-0 fw-bold">MetaPanel</h5>
+                <img src="<?= APP_URL ?>/assets/logos/digital_rubix_logo.svg" alt="Digital Rubix Logo" style="height: 40px;" class="me-2">
             </div>
             <hr class="text-secondary">
             <ul class="nav nav-pills flex-column mb-auto">
                 <li class="nav-item mb-1">
-                    <a href="<?= APP_URL ?>/admin/index.php" class="nav-link text-white">
+                    <a href="<?= APP_URL ?>/admin/index.php" class="nav-link">
                         <i class="fa-solid fa-gauge me-2"></i> Dashboard Overview
                     </a>
                 </li>
                 <li class="nav-item mb-1">
-                    <a href="<?= APP_URL ?>/admin/clients.php" class="nav-link text-white">
-                        <i class="fa-solid fa-building-user me-2"></i> Client Management
+                    <a href="<?= APP_URL ?>/admin/clients.php" class="nav-link">
+                        <i class="fa-solid fa-building-user me-2"></i> Client Directory
                     </a>
                 </li>
                 <li class="nav-item mb-1">
@@ -134,7 +131,7 @@ $csrfToken = generateCsrfToken();
                     </a>
                 </li>
                 <li class="nav-item mb-1">
-                    <a href="<?= APP_URL ?>/admin/sync_status.php" class="nav-link text-white">
+                    <a href="<?= APP_URL ?>/admin/sync_status.php" class="nav-link">
                         <i class="fa-solid fa-arrows-rotate me-2"></i> Cron Sync Status
                     </a>
                 </li>
@@ -155,12 +152,17 @@ $csrfToken = generateCsrfToken();
         <div class="admin-content flex-grow-1 p-4">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
-                    <h3 class="fw-bold m-0 text-white">Team Member Access Management</h3>
+                    <h3 class="fw-bold m-0">Team Member Access Management</h3>
                     <p class="text-muted m-0">Assign selective client view permissions to team members (e.g. Tanisha / Kumkum)</p>
                 </div>
-                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newTeamMemberModal">
-                    <i class="fa-solid fa-user-plus me-1"></i> Add Team Member
-                </button>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-dark btn-theme-toggle me-2">
+                        <i class="fa-solid fa-moon me-1"></i> Dark Mode
+                    </button>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newTeamMemberModal">
+                        <i class="fa-solid fa-user-plus me-1"></i> Add Team Member
+                    </button>
+                </div>
             </div>
 
             <?php if ($successMessage): ?>
@@ -187,8 +189,8 @@ $csrfToken = generateCsrfToken();
                     <?php foreach ($teamMembers as $tm): ?>
                         <?php $assignedClientIds = $accessMap[$tm['id']] ?? []; ?>
                         <div class="col-lg-6 mb-4">
-                            <div class="card bg-dark text-white border-secondary shadow-sm">
-                                <div class="card-header border-secondary d-flex justify-content-between align-items-center">
+                            <div class="card glass-card shadow-sm">
+                                <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center">
                                     <h5 class="m-0"><i class="fa-solid fa-id-badge text-info me-2"></i> <?= e($tm['name']) ?></h5>
                                     <small class="text-muted"><?= e($tm['email']) ?></small>
                                 </div>
@@ -198,14 +200,14 @@ $csrfToken = generateCsrfToken();
                                         <input type="hidden" name="user_id" value="<?= $tm['id'] ?>">
                                         <input type="hidden" name="csrf_token" value="<?= e($csrfToken) ?>">
 
-                                        <label class="form-label text-muted mb-2">Assigned Client Portals:</label>
+                                        <label class="form-label text-muted small fw-semibold mb-2">Assigned Client Portals:</label>
                                         <div class="row g-2 mb-3 max-vh-25 overflow-auto">
                                             <?php foreach ($activeClients as $ac): ?>
                                                 <?php $isAssigned = in_array($ac['id'], $assignedClientIds, true); ?>
                                                 <div class="col-6">
                                                     <div class="form-check">
                                                         <input class="form-check-input" type="checkbox" name="client_ids[]" value="<?= $ac['id'] ?>" id="tm_<?= $tm['id'] ?>_c_<?= $ac['id'] ?>" <?= $isAssigned ? 'checked' : '' ?>>
-                                                        <label class="form-check-label text-light-muted" for="tm_<?= $tm['id'] ?>_c_<?= $ac['id'] ?>">
+                                                        <label class="form-check-label text-muted small" for="tm_<?= $tm['id'] ?>_c_<?= $ac['id'] ?>">
                                                             <?= e($ac['business_name']) ?>
                                                         </label>
                                                     </div>
@@ -213,8 +215,8 @@ $csrfToken = generateCsrfToken();
                                             <?php endforeach; ?>
                                         </div>
 
-                                        <button type="submit" class="btn btn-sm btn-outline-success">
-                                            <i class="fa-solid fa-floppy-disk me-1"></i> Save Client Permissions
+                                        <button type="submit" class="btn btn-sm btn-success">
+                                            <i class="fa-solid fa-floppy-disk me-1"></i> Save Permissions
                                         </button>
                                     </form>
                                 </div>
@@ -229,10 +231,10 @@ $csrfToken = generateCsrfToken();
     <!-- Create Team Member Modal -->
     <div class="modal fade" id="newTeamMemberModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content bg-dark text-white border-secondary">
-                <div class="modal-header border-secondary">
+            <div class="modal-content glass-card">
+                <div class="modal-header border-bottom">
                     <h5 class="modal-title"><i class="fa-solid fa-user-plus text-primary me-2"></i> Register Team Member</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <form method="POST">
                     <input type="hidden" name="action" value="create_team_member">
@@ -240,19 +242,19 @@ $csrfToken = generateCsrfToken();
 
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label class="form-label text-muted">Full Name *</label>
-                            <input type="text" name="name" class="form-control bg-dark text-white border-secondary" placeholder="e.g. Tanisha Sharma" required>
+                            <label class="form-label text-muted small fw-semibold">Full Name *</label>
+                            <input type="text" name="name" class="form-control" placeholder="e.g. Tanisha Sharma" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label text-muted">Email Address *</label>
-                            <input type="email" name="email" class="form-control bg-dark text-white border-secondary" placeholder="tanisha@digitalrubix.com" required>
+                            <label class="form-label text-muted small fw-semibold">Email Address *</label>
+                            <input type="email" name="email" class="form-control" placeholder="tanisha@digitalrubix.com" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label text-muted">Password *</label>
-                            <input type="password" name="password" class="form-control bg-dark text-white border-secondary" placeholder="••••••••" required>
+                            <label class="form-label text-muted small fw-semibold">Password *</label>
+                            <input type="password" name="password" class="form-control" placeholder="••••••••" required>
                         </div>
                     </div>
-                    <div class="modal-footer border-secondary">
+                    <div class="modal-footer border-top">
                         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
                         <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk me-1"></i> Create Member</button>
                     </div>
@@ -262,5 +264,9 @@ $csrfToken = generateCsrfToken();
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        window.APP_URL = "<?= APP_URL ?>";
+    </script>
+    <script src="<?= APP_URL ?>/assets/js/dashboard.js"></script>
 </body>
 </html>

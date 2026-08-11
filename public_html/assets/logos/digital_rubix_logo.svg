@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 450 140" width="450" height="140">
+  <defs>
+    <style>
+      .serif-text { font-family: 'Playfair Display', 'Georgia', 'Times New Roman', serif; font-weight: 700; fill: #111827; }
+      .sans-text { font-family: 'Inter', 'Arial', sans-serif; font-weight: 700; fill: #ffffff; letter-spacing: 4px; font-size: 16px; }
+      .hashtag { font-family: 'Inter', 'Arial', sans-serif; font-weight: 800; fill: #4b83c4; font-size: 85px; }
+    </style>
+  </defs>
+  
+  <!-- White upper border -->
+  <rect x="0" y="0" width="450" height="25" fill="#ffffff" />
+  
+  <!-- Grey middle stripe -->
+  <rect x="0" y="25" width="450" height="85" fill="#cbd5e1" />
+  
+  <!-- Hashtag symbol -->
+  <text x="65" y="96" class="hashtag">#</text>
+  
+  <!-- Digital Rubix Text -->
+  <text x="165" y="62" class="serif-text" font-size="44">Digital</text>
+  <text x="175" y="102" class="serif-text" font-size="44">Rubix</text>
+  
+  <!-- Black footer bar -->
+  <rect x="0" y="110" width="450" height="30" fill="#000000" />
+  <text x="225" y="130" class="sans-text" text-anchor="middle">MARKETING EXPERT</text>
+</svg>

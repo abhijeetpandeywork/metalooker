@@ -41,6 +41,7 @@ const filesToDeploy = [
     'public_html/api/export_pdf.php',
     'public_html/assets/css/style.css',
     'public_html/assets/js/dashboard.js',
+    'public_html/assets/logos/digital_rubix_logo.svg',
     'public_html/includes/.htaccess',
     'public_html/includes/config.php',
     'public_html/includes/db.php',

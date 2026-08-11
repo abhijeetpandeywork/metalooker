@@ -4,7 +4,7 @@
  *
  * Renders the white-labeled ad analytics dashboard featuring customized branding,
  * toggleable metric KPI cards, Chart.js visualizations, tabular campaign breakdowns,
- * date range presets via Flatpickr, and CSV/PDF export actions.
+ * date range presets via Flatpickr, micro-info popovers, and CSV/PDF export actions.
  *
  * @package MetaPanel\Pages
  */
@@ -34,7 +34,6 @@ if ($userRole === 'client') {
             exit;
         }
     } else {
-        // Grab first authorized client for team member
         $tcaStmt = $db->prepare("SELECT client_id FROM team_client_access WHERE user_id = ? LIMIT 1");
         $tcaStmt->execute([$userId]);
         $first = $tcaStmt->fetch();
@@ -42,7 +41,6 @@ if ($userRole === 'client') {
     }
 } elseif ($userRole === 'super_admin') {
     if ($clientId <= 0) {
-        // Default to first active client for super admin view
         $firstStmt = $db->query("SELECT id FROM clients WHERE active = 1 LIMIT 1");
         $clientId = (int)($firstStmt->fetch()['id'] ?? 0);
     }
@@ -71,9 +69,9 @@ if (!$client) {
 $brandColor = $client['brand_color'] ?? '#0F2D55';
 $reportTitle = $client['report_title'] ?? 'My Ads Performance';
 $currency = $client['currency'] ?? 'INR';
-$logoUrl = !empty($client['logo_path']) ? $client['logo_path'] : null;
+$logoUrl = !empty($client['logo_path']) ? $client['logo_path'] : APP_URL . '/assets/logos/digital_rubix_logo.svg';
 
-// Allow super admin/team member to switch client view via dropdown
+// Client switcher for Admins
 $allClients = [];
 if ($userRole === 'super_admin' || $userRole === 'team_member') {
     if ($userRole === 'super_admin') {
@@ -93,7 +91,7 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
 }
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -111,24 +109,20 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
     <style>
         :root {
             --brand-color: <?= e($brandColor) ?>;
-            --brand-color-alpha: <?= e($brandColor) ?>22;
+            --brand-accent: <?= e($brandColor) ?>;
         }
     </style>
 </head>
-<body class="bg-light">
+<body>
     <!-- Client Top Header Bar -->
     <header class="client-dashboard-header d-flex flex-wrap justify-content-between align-items-center mb-4">
         <div class="d-flex align-items-center mb-2 mb-md-0">
-            <?php if ($logoUrl): ?>
-                <img src="<?= e($logoUrl) ?>" alt="Client Logo" style="max-height: 42px;" class="me-3">
-            <?php else: ?>
-                <div class="auth-logo-badge me-3 bg-brand-accent p-2 rounded">
-                    <i class="fa-solid fa-chart-line text-white fs-4"></i>
-                </div>
-            <?php endif; ?>
-            <div>
-                <h4 class="m-0 fw-bold client-brand-accent"><?= e($client['business_name']) ?></h4>
-                <small class="text-muted"><?= e($reportTitle) ?></small>
+            <a href="<?= APP_URL ?>" class="me-3">
+                <img src="<?= e($logoUrl) ?>" alt="Digital Rubix Logo" class="agency-logo-img">
+            </a>
+            <div class="border-start ps-3 ms-2 d-none d-sm-block">
+                <h5 class="m-0 fw-bold text-primary"><?= e($client['business_name']) ?></h5>
+                <small class="text-muted"><i class="fa-solid fa-phone me-1 text-success"></i> Hotline: +91 9871633838 | <?= e($reportTitle) ?></small>
             </div>
         </div>
 
@@ -137,28 +131,38 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
                 <select class="form-select form-select-sm me-2" onchange="location.href='<?= APP_URL ?>/dashboard.php?client_id=' + this.value" style="width: auto;">
                     <?php foreach ($allClients as $ac): ?>
                         <option value="<?= $ac['id'] ?>" <?= $ac['id'] === $clientId ? 'selected' : '' ?>>
-                            Switch Client: <?= e($ac['business_name']) ?>
+                            Switch: <?= e($ac['business_name']) ?>
                         </option>
                     <?php endforeach; ?>
                 </select>
             <?php endif; ?>
 
-            <!-- Export Buttons -->
-            <button id="btn-export-csv" class="btn btn-sm btn-outline-secondary">
-                <i class="fa-solid fa-file-csv me-1 text-success"></i> CSV Export
+            <!-- Theme Mode Switcher -->
+            <button type="button" class="btn btn-sm btn-outline-dark btn-theme-toggle">
+                <i class="fa-solid fa-moon me-1"></i> Dark Mode
             </button>
-            <button id="btn-export-pdf" class="btn btn-sm btn-outline-secondary">
-                <i class="fa-solid fa-file-pdf me-1 text-danger"></i> PDF Export
+
+            <!-- Onboarding & Connection Guide Modal Trigger -->
+            <button type="button" class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#metaGuideModal">
+                <i class="fa-solid fa-circle-question me-1"></i> Meta API Guide
+            </button>
+
+            <!-- Export Buttons -->
+            <button id="btn-export-csv" class="btn btn-sm btn-outline-success">
+                <i class="fa-solid fa-file-csv me-1"></i> CSV Export
+            </button>
+            <button id="btn-export-pdf" class="btn btn-sm btn-outline-danger">
+                <i class="fa-solid fa-file-pdf me-1"></i> PDF Export
             </button>
 
             <!-- Admin Gateway Backlink -->
             <?php if ($userRole === 'super_admin' || $userRole === 'team_member'): ?>
-                <a href="<?= APP_URL ?>/admin/index.php" class="btn btn-sm btn-dark me-2">
-                    <i class="fa-solid fa-user-gear me-1"></i> Admin Portal
+                <a href="<?= APP_URL ?>/admin/index.php" class="btn btn-sm btn-dark me-1">
+                    <i class="fa-solid fa-user-gear me-1"></i> Admin Console
                 </a>
             <?php endif; ?>
 
-            <a href="<?= APP_URL ?>/logout.php" class="btn btn-sm btn-outline-danger" title="Sign Out">
+            <a href="<?= APP_URL ?>/logout.php" class="btn btn-sm btn-outline-secondary" title="Sign Out">
                 <i class="fa-solid fa-power-off"></i>
             </a>
         </div>
@@ -169,9 +173,9 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
         <input type="hidden" id="meta-client-id" value="<?= $clientId ?>">
         <input type="hidden" id="meta-currency" value="<?= e($currency) ?>">
 
-        <!-- Date Range Filter Bar -->
-        <div class="card custom-card p-3 mb-4 shadow-sm">
-            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <!-- Date Range Filter & Search Bar -->
+        <div class="card glass-card p-3 mb-4 shadow-sm">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
                 <div class="btn-group" role="group" aria-label="Date presets">
                     <button type="button" class="btn btn-sm btn-outline-secondary btn-preset-date" data-preset="last_7">7 Days</button>
                     <button type="button" class="btn btn-sm btn-outline-secondary btn-preset-date" data-preset="last_14">14 Days</button>
@@ -180,9 +184,9 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
                     <button type="button" class="btn btn-sm btn-outline-secondary btn-preset-date" data-preset="last_month">Last Month</button>
                 </div>
 
-                <div class="d-flex align-items-center">
-                    <i class="fa-regular fa-calendar me-2 text-muted"></i>
-                    <input type="text" id="date-range-picker" class="form-control form-control-sm bg-white" placeholder="Select custom date range..." style="min-width: 230px;">
+                <div class="d-flex align-items-center gap-2 flex-grow-1 flex-md-grow-0" style="min-width: 260px;">
+                    <i class="fa-regular fa-calendar text-muted"></i>
+                    <input type="text" id="date-range-picker" class="form-control form-control-sm" placeholder="Select custom date range...">
                 </div>
             </div>
         </div>
@@ -192,9 +196,11 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
             <?php if ($client['show_spend'] ?? 1): ?>
                 <div class="col-xl-3 col-md-6">
                     <div class="kpi-card">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="d-flex justify-content-between align-items-center">
                             <span class="kpi-title">Total Ad Spend</span>
-                            <div class="kpi-icon-wrapper"><i class="fa-solid fa-wallet"></i></div>
+                            <button type="button" class="info-popover-btn" data-bs-toggle="popover" title="Total Ad Spend" data-bs-content="Sum of all financial expenditure across active campaigns within the selected date range.">
+                                <i class="fa-solid fa-circle-info"></i>
+                            </button>
                         </div>
                         <h3 class="kpi-value" id="kpi-spend">—</h3>
                         <small class="text-muted">Calculated for selected period</small>
@@ -205,12 +211,14 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
             <?php if ($client['show_roas'] ?? 1): ?>
                 <div class="col-xl-3 col-md-6">
                     <div class="kpi-card">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="d-flex justify-content-between align-items-center">
                             <span class="kpi-title">Return on Ad Spend (ROAS)</span>
-                            <div class="kpi-icon-wrapper"><i class="fa-solid fa-chart-line"></i></div>
+                            <button type="button" class="info-popover-btn" data-bs-toggle="popover" title="Purchase ROAS" data-bs-content="Formula: Total Conversion Revenue / Total Ad Spend. Values > 1.0x indicate profitable advertising return.">
+                                <i class="fa-solid fa-circle-info"></i>
+                            </button>
                         </div>
                         <h3 class="kpi-value text-success" id="kpi-roas">—</h3>
-                        <small class="text-muted">Average Purchase ROAS</small>
+                        <small class="text-muted">Average Purchase ROAS Multiple</small>
                     </div>
                 </div>
             <?php endif; ?>
@@ -218,12 +226,14 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
             <?php if ($client['show_leads'] ?? 1): ?>
                 <div class="col-xl-3 col-md-6">
                     <div class="kpi-card">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="kpi-title">Conversions / Results</span>
-                            <div class="kpi-icon-wrapper"><i class="fa-solid fa-bullseye"></i></div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="kpi-title">Conversions / Leads</span>
+                            <button type="button" class="info-popover-btn" data-bs-toggle="popover" title="Total Results" data-bs-content="Count of desired action outcomes (e.g. Lead Form submissions, Purchases, or Registrations).">
+                                <i class="fa-solid fa-circle-info"></i>
+                            </button>
                         </div>
                         <h3 class="kpi-value" id="kpi-conversions">—</h3>
-                        <small class="text-muted">Total Results Triggered</small>
+                        <small class="text-muted">Total Attributed Results</small>
                     </div>
                 </div>
             <?php endif; ?>
@@ -231,12 +241,14 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
             <?php if ($client['show_ctr'] ?? 1): ?>
                 <div class="col-xl-3 col-md-6">
                     <div class="kpi-card">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="d-flex justify-content-between align-items-center">
                             <span class="kpi-title">Click-Through Rate (CTR)</span>
-                            <div class="kpi-icon-wrapper"><i class="fa-solid fa-arrow-pointer"></i></div>
+                            <button type="button" class="info-popover-btn" data-bs-toggle="popover" title="CTR Percentage" data-bs-content="Formula: (Total Clicks / Total Impressions) * 100. Measures ad creative engagement effectiveness.">
+                                <i class="fa-solid fa-circle-info"></i>
+                            </button>
                         </div>
                         <h3 class="kpi-value" id="kpi-ctr">—</h3>
-                        <small class="text-muted">Avg. Clicks vs Impressions</small>
+                        <small class="text-muted">Avg. Engagement Efficiency</small>
                     </div>
                 </div>
             <?php endif; ?>
@@ -244,9 +256,11 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
             <?php if ($client['show_cpc'] ?? 1): ?>
                 <div class="col-xl-3 col-md-6">
                     <div class="kpi-card">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="d-flex justify-content-between align-items-center">
                             <span class="kpi-title">Cost Per Click (CPC)</span>
-                            <div class="kpi-icon-wrapper"><i class="fa-solid fa-coins"></i></div>
+                            <button type="button" class="info-popover-btn" data-bs-toggle="popover" title="Avg Cost Per Click" data-bs-content="Formula: Total Ad Spend / Total Clicks. Lower values indicate cost-efficient traffic.">
+                                <i class="fa-solid fa-circle-info"></i>
+                            </button>
                         </div>
                         <h3 class="kpi-value" id="kpi-cpc">—</h3>
                         <small class="text-muted">Average Link Click Cost</small>
@@ -257,12 +271,14 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
             <?php if ($client['show_impressions'] ?? 1): ?>
                 <div class="col-xl-3 col-md-6">
                     <div class="kpi-card">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="d-flex justify-content-between align-items-center">
                             <span class="kpi-title">Total Impressions</span>
-                            <div class="kpi-icon-wrapper"><i class="fa-solid fa-eye"></i></div>
+                            <button type="button" class="info-popover-btn" data-bs-toggle="popover" title="Impressions" data-bs-content="Total number of times your ads were rendered on screen across Meta platforms (Facebook & Instagram).">
+                                <i class="fa-solid fa-circle-info"></i>
+                            </button>
                         </div>
                         <h3 class="kpi-value" id="kpi-impressions">—</h3>
-                        <small class="text-muted">Total Ad Impressions Delivered</small>
+                        <small class="text-muted">Total Ad Views Delivered</small>
                     </div>
                 </div>
             <?php endif; ?>
@@ -272,9 +288,9 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
         <div class="row g-4 mb-4">
             <!-- Line Chart -->
             <div class="col-lg-7">
-                <div class="custom-card p-4 h-100">
+                <div class="glass-card p-4 h-100">
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="fw-bold text-dark m-0"><i class="fa-solid fa-chart-area me-2 client-brand-accent"></i> Daily Ad Spend Trend</h5>
+                        <h5 class="fw-bold m-0"><i class="fa-solid fa-chart-area me-2 text-primary"></i> Daily Ad Spend Trend</h5>
                     </div>
                     <div style="height: 300px; position: relative;">
                         <canvas id="spendLineChart"></canvas>
@@ -284,9 +300,9 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
 
             <!-- Bar Chart -->
             <div class="col-lg-5">
-                <div class="custom-card p-4 h-100">
+                <div class="glass-card p-4 h-100">
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="fw-bold text-dark m-0"><i class="fa-solid fa-chart-bar me-2 text-success"></i> Campaign Performance</h5>
+                        <h5 class="fw-bold m-0"><i class="fa-solid fa-chart-bar me-2 text-success"></i> Campaign Performance</h5>
                     </div>
                     <div style="height: 300px; position: relative;">
                         <canvas id="impClickBarChart"></canvas>
@@ -295,10 +311,10 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
             </div>
         </div>
 
-        <!-- Breakdown Tables Section -->
-        <div class="card custom-card mb-5 shadow-sm">
-            <div class="card-header bg-white border-bottom py-3">
-                <ul class="nav nav-tabs card-header-tabs" id="breakdownTabs" role="tablist">
+        <!-- Breakdown Tables Section with Real-time Search -->
+        <div class="card glass-card mb-5 shadow-sm">
+            <div class="card-header bg-transparent border-bottom py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <ul class="nav nav-tabs card-header-tabs m-0" id="breakdownTabs" role="tablist">
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active fw-semibold" id="campaigns-tab" data-bs-toggle="tab" data-bs-target="#campaigns-pane" type="button" role="tab">
                             <i class="fa-solid fa-layer-group me-1"></i> Campaign Level
@@ -317,14 +333,21 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
                         </button>
                     </li>
                 </ul>
+
+                <!-- Realtime Table Search Box -->
+                <div class="input-group input-group-sm" style="max-width: 260px;">
+                    <span class="input-group-text"><i class="fa-solid fa-magnifying-glass"></i></span>
+                    <input type="text" id="table-search-input" class="form-control" placeholder="Search campaign or ad name...">
+                </div>
             </div>
+
             <div class="card-body p-0">
                 <div class="tab-content" id="breakdownTabContent">
                     <!-- Campaigns Pane -->
                     <div class="tab-pane fade show active p-3" id="campaigns-pane" role="tabpanel">
                         <div class="table-responsive">
-                            <table class="table table-hover table-striped align-middle mb-0">
-                                <thead class="table-light">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead>
                                     <tr>
                                         <th>Campaign Name</th>
                                         <th>Impressions</th>
@@ -347,8 +370,8 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
                     <?php if ($client['show_adsets'] ?? 1): ?>
                         <div class="tab-pane fade p-3" id="adsets-pane" role="tabpanel">
                             <div class="table-responsive">
-                                <table class="table table-hover table-striped align-middle mb-0">
-                                    <thead class="table-light">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead>
                                         <tr>
                                             <th>Ad Set Name</th>
                                             <th>Impressions</th>
@@ -371,8 +394,8 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
                     <!-- Ads Pane -->
                     <div class="tab-pane fade p-3" id="ads-pane" role="tabpanel">
                         <div class="table-responsive">
-                            <table class="table table-hover table-striped align-middle mb-0">
-                                <thead class="table-light">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead>
                                     <tr>
                                         <th>Ad Name</th>
                                         <th>Impressions</th>
@@ -390,6 +413,47 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
                             </table>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Meta Onboarding & Connection Guide Modal -->
+    <div class="modal fade" id="metaGuideModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content glass-card">
+                <div class="modal-header border-bottom">
+                    <h5 class="modal-title"><i class="fa-brands fa-meta text-primary me-2"></i> Meta Marketing API Client Connection Guide</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="onboarding-step-card">
+                        <h6 class="fw-bold text-primary mb-1">Step 1: Meta Business Login Authentication</h6>
+                        <p class="small text-muted mb-0">
+                            Click "Connect Meta Account" in Admin Config. The system will redirect you to Meta's secure OAuth portal requesting read access (`ads_read`, `read_insights`).
+                        </p>
+                    </div>
+                    <div class="onboarding-step-card">
+                        <h6 class="fw-bold text-primary mb-1">Step 2: Automated 60-Day Token Exchange</h6>
+                        <p class="small text-muted mb-0">
+                            MetaPanel automatically exchanges the short-lived access code for a 60-day long-lived User Token, encrypted at rest in MySQL using AES-256-CBC.
+                        </p>
+                    </div>
+                    <div class="onboarding-step-card">
+                        <h6 class="fw-bold text-primary mb-1">Step 3: Ad Account Format (`act_XXXXXXXX`)</h6>
+                        <p class="small text-muted mb-0">
+                            Your Meta Ad Account ID must follow the standard `act_1234567890` format. MetaPanel fetches your default account automatically, or admins can set a custom override.
+                        </p>
+                    </div>
+                    <div class="onboarding-step-card">
+                        <h6 class="fw-bold text-primary mb-1">Step 4: Automated 6-Hour Data Caching</h6>
+                        <p class="small text-muted mb-0">
+                            Performance metrics (Spend, Impressions, Clicks, ROAS) are synced every 6 hours by background cron jobs to provide instant, high-speed page loads without hitting API rate limits.
+                        </p>
+                    </div>
+                </div>
+                <div class="modal-footer border-top">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close Guide</button>
                 </div>
             </div>
         </div>

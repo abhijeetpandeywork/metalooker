@@ -41,7 +41,7 @@ $recentLogs = $logsStmt->fetchAll();
 $csrfToken = generateCsrfToken();
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -51,28 +51,27 @@ $csrfToken = generateCsrfToken();
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/style.css">
 </head>
-<body class="admin-body">
-    <div class="d-flex">
-        <!-- Sidebar -->
+<body>
+    <div class="d-flex admin-wrapper">
+        <!-- Sidebar Navigation -->
         <div class="admin-sidebar p-3 text-white">
             <div class="d-flex align-items-center mb-4">
-                <i class="fa-solid fa-chart-line fs-3 text-primary me-2"></i>
-                <h5 class="m-0 fw-bold">MetaPanel</h5>
+                <img src="<?= APP_URL ?>/assets/logos/digital_rubix_logo.svg" alt="Digital Rubix Logo" style="height: 40px;" class="me-2">
             </div>
             <hr class="text-secondary">
             <ul class="nav nav-pills flex-column mb-auto">
                 <li class="nav-item mb-1">
-                    <a href="<?= APP_URL ?>/admin/index.php" class="nav-link text-white">
+                    <a href="<?= APP_URL ?>/admin/index.php" class="nav-link">
                         <i class="fa-solid fa-gauge me-2"></i> Dashboard Overview
                     </a>
                 </li>
                 <li class="nav-item mb-1">
-                    <a href="<?= APP_URL ?>/admin/clients.php" class="nav-link text-white">
-                        <i class="fa-solid fa-building-user me-2"></i> Client Management
+                    <a href="<?= APP_URL ?>/admin/clients.php" class="nav-link">
+                        <i class="fa-solid fa-building-user me-2"></i> Client Directory
                     </a>
                 </li>
                 <li class="nav-item mb-1">
-                    <a href="<?= APP_URL ?>/admin/team.php" class="nav-link text-white">
+                    <a href="<?= APP_URL ?>/admin/team.php" class="nav-link">
                         <i class="fa-solid fa-users me-2"></i> Team Access
                     </a>
                 </li>
@@ -98,19 +97,22 @@ $csrfToken = generateCsrfToken();
         <div class="admin-content flex-grow-1 p-4">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
-                    <h3 class="fw-bold m-0 text-white">Meta API Data Sync Console</h3>
+                    <h3 class="fw-bold m-0">Meta API Data Sync Console</h3>
                     <p class="text-muted m-0">Monitor 6-hour cron sync status and trigger manual client refreshes</p>
                 </div>
+                <button type="button" class="btn btn-sm btn-outline-dark btn-theme-toggle">
+                    <i class="fa-solid fa-moon me-1"></i> Dark Mode
+                </button>
             </div>
 
             <!-- Client Sync Triggers Grid -->
-            <div class="card bg-dark text-white border-secondary mb-4 shadow-sm">
-                <div class="card-header border-secondary">
+            <div class="card glass-card mb-4 shadow-sm">
+                <div class="card-header bg-transparent border-bottom">
                     <h5 class="m-0"><i class="fa-solid fa-bolt text-warning me-2"></i> Quick Sync Console</h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-dark table-hover align-middle mb-0">
+                        <table class="table table-hover align-middle mb-0">
                             <thead>
                                 <tr>
                                     <th>Client Business</th>
@@ -128,9 +130,9 @@ $csrfToken = generateCsrfToken();
                                         <td class="sync-time"><?= e($c['last_sync'] ? date('d M Y, h:i A', strtotime($c['last_sync'])) : 'Never') ?></td>
                                         <td class="sync-status">
                                             <?php if ($c['last_status'] === 'success'): ?>
-                                                <span class="badge bg-success">Success</span>
+                                                <span class="badge bg-success bg-opacity-15 text-success border border-success border-opacity-25">Success</span>
                                             <?php elseif ($c['last_status'] === 'error'): ?>
-                                                <span class="badge bg-danger">Error</span>
+                                                <span class="badge bg-danger bg-opacity-15 text-danger border border-danger border-opacity-25">Error</span>
                                             <?php else: ?>
                                                 <span class="badge bg-secondary">Pending</span>
                                             <?php endif; ?>
@@ -149,13 +151,13 @@ $csrfToken = generateCsrfToken();
             </div>
 
             <!-- Recent Execution History Table -->
-            <div class="card bg-dark text-white border-secondary shadow-sm">
-                <div class="card-header border-secondary">
+            <div class="card glass-card shadow-sm">
+                <div class="card-header bg-transparent border-bottom">
                     <h5 class="m-0"><i class="fa-solid fa-list-check text-info me-2"></i> Execution History (Last 30 Runs)</h5>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-dark table-striped align-middle mb-0">
+                        <table class="table table-striped align-middle mb-0">
                             <thead>
                                 <tr>
                                     <th>Timestamp</th>
@@ -172,9 +174,9 @@ $csrfToken = generateCsrfToken();
                                         <td class="fw-semibold"><?= e($log['business_name']) ?></td>
                                         <td>
                                             <?php if ($log['status'] === 'success'): ?>
-                                                <span class="badge bg-success"><i class="fa-solid fa-check me-1"></i> Success</span>
+                                                <span class="badge bg-success bg-opacity-15 text-success"><i class="fa-solid fa-check me-1"></i> Success</span>
                                             <?php else: ?>
-                                                <span class="badge bg-danger"><i class="fa-solid fa-xmark me-1"></i> Failed</span>
+                                                <span class="badge bg-danger bg-opacity-15 text-danger"><i class="fa-solid fa-xmark me-1"></i> Failed</span>
                                             <?php endif; ?>
                                         </td>
                                         <td><span class="badge bg-secondary"><?= formatNumber($log['rows_inserted']) ?></span></td>
@@ -192,6 +194,10 @@ $csrfToken = generateCsrfToken();
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        window.APP_URL = "<?= APP_URL ?>";
+    </script>
+    <script src="<?= APP_URL ?>/assets/js/dashboard.js"></script>
     <script>
         document.querySelectorAll('.btn-sync-now').forEach(button => {
             button.addEventListener('click', function() {
@@ -211,11 +217,11 @@ $csrfToken = generateCsrfToken();
                 .then(data => {
                     if (data.success) {
                         row.querySelector('.sync-time').innerText = data.synced_at;
-                        row.querySelector('.sync-status').innerHTML = '<span class="badge bg-success">Success</span>';
+                        row.querySelector('.sync-status').innerHTML = '<span class="badge bg-success bg-opacity-15 text-success">Success</span>';
                         btn.innerHTML = '<i class="fa-solid fa-check me-1"></i> Done!';
                         setTimeout(() => { location.reload(); }, 1200);
                     } else {
-                        row.querySelector('.sync-status').innerHTML = '<span class="badge bg-danger">Error</span>';
+                        row.querySelector('.sync-status').innerHTML = '<span class="badge bg-danger bg-opacity-15 text-danger">Error</span>';
                         alert('Sync Failed: ' + data.error);
                         btn.disabled = false;
                         btn.innerHTML = '<i class="fa-solid fa-rotate me-1"></i> Sync Now';

@@ -37,13 +37,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             try {
                 $db->beginTransaction();
 
-                // 1. Create User Login Account
                 $passwordHash = password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]);
                 $userStmt = $db->prepare("INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, 'client')");
                 $userStmt->execute([$businessName, $email, $passwordHash]);
                 $userId = (int)$db->lastInsertId();
 
-                // 2. Create Client Record
                 $clientStmt = $db->prepare("
                     INSERT INTO clients (user_id, business_name, brand_color, currency, active)
                     VALUES (?, ?, ?, ?, 1)
@@ -51,7 +49,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 $clientStmt->execute([$userId, $businessName, $brandColor, $currency]);
                 $clientId = (int)$db->lastInsertId();
 
-                // 3. Initialize Default Dashboard Config
                 $configStmt = $db->prepare("
                     INSERT INTO dashboard_config (client_id, default_range, report_title)
                     VALUES (?, 'last_30', ?)
@@ -64,7 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 $successMessage = "Client account created successfully. You can now configure Meta connection.";
             } catch (Exception $e) {
                 $db->rollBack();
-                if (strpos($e->getMessage(), 'Duplicate entry') !== false) {
+                if (strpos($e->getMessage(), 'UNIQUE constraint') !== false || strpos($e->getMessage(), 'Duplicate entry') !== false) {
                     $errorMessage = "A user account with this email address already exists.";
                 } else {
                     $errorMessage = "Failed to create client: " . $e->getMessage();
@@ -74,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
 }
 
-// Handle Client Status Toggle (Activate/Deactivate)
+// Handle Client Status Toggle
 if (isset($_GET['toggle_id'])) {
     $toggleId = (int)$_GET['toggle_id'];
     $stmt = $db->prepare("UPDATE clients SET active = IF(active=1, 0, 1) WHERE id = ?");
@@ -97,7 +94,7 @@ $clients = $db->query($clientsQuery)->fetchAll();
 $csrfToken = generateCsrfToken();
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -107,33 +104,32 @@ $csrfToken = generateCsrfToken();
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/style.css">
 </head>
-<body class="admin-body">
-    <div class="d-flex">
+<body>
+    <div class="d-flex admin-wrapper">
         <!-- Sidebar Navigation -->
         <div class="admin-sidebar p-3 text-white">
             <div class="d-flex align-items-center mb-4">
-                <i class="fa-solid fa-chart-line fs-3 text-primary me-2"></i>
-                <h5 class="m-0 fw-bold">MetaPanel</h5>
+                <img src="<?= APP_URL ?>/assets/logos/digital_rubix_logo.svg" alt="Digital Rubix Logo" style="height: 40px;" class="me-2">
             </div>
             <hr class="text-secondary">
             <ul class="nav nav-pills flex-column mb-auto">
                 <li class="nav-item mb-1">
-                    <a href="<?= APP_URL ?>/admin/index.php" class="nav-link text-white">
+                    <a href="<?= APP_URL ?>/admin/index.php" class="nav-link">
                         <i class="fa-solid fa-gauge me-2"></i> Dashboard Overview
                     </a>
                 </li>
                 <li class="nav-item mb-1">
                     <a href="<?= APP_URL ?>/admin/clients.php" class="nav-link active">
-                        <i class="fa-solid fa-building-user me-2"></i> Client Management
+                        <i class="fa-solid fa-building-user me-2"></i> Client Directory
                     </a>
                 </li>
                 <li class="nav-item mb-1">
-                    <a href="<?= APP_URL ?>/admin/team.php" class="nav-link text-white">
+                    <a href="<?= APP_URL ?>/admin/team.php" class="nav-link">
                         <i class="fa-solid fa-users me-2"></i> Team Access
                     </a>
                 </li>
                 <li class="nav-item mb-1">
-                    <a href="<?= APP_URL ?>/admin/sync_status.php" class="nav-link text-white">
+                    <a href="<?= APP_URL ?>/admin/sync_status.php" class="nav-link">
                         <i class="fa-solid fa-arrows-rotate me-2"></i> Cron Sync Status
                     </a>
                 </li>
@@ -154,12 +150,17 @@ $csrfToken = generateCsrfToken();
         <div class="admin-content flex-grow-1 p-4">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
-                    <h3 class="fw-bold m-0 text-white">Agency Client Portals</h3>
-                    <p class="text-muted m-0">Manage multi-client login credentials, Meta access tokens, and portal configurations</p>
+                    <h3 class="fw-bold m-0">Agency Client Directory</h3>
+                    <p class="text-muted m-0">Manage multi-client credentials, Meta tokens, and dashboard settings</p>
                 </div>
-                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newClientModal">
-                    <i class="fa-solid fa-plus me-1"></i> Add New Client
-                </button>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-dark btn-theme-toggle me-2">
+                        <i class="fa-solid fa-moon me-1"></i> Dark Mode
+                    </button>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newClientModal">
+                        <i class="fa-solid fa-plus me-1"></i> Add New Client
+                    </button>
+                </div>
             </div>
 
             <?php if ($successMessage): ?>
@@ -177,10 +178,10 @@ $csrfToken = generateCsrfToken();
             <?php endif; ?>
 
             <!-- Client Directory Table -->
-            <div class="card bg-dark text-white border-secondary shadow-sm">
+            <div class="card glass-card shadow-sm">
                 <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-dark table-hover align-middle mb-0">
+                        <table class="table table-hover align-middle mb-0">
                             <thead>
                                 <tr>
                                     <th>Business Name</th>
@@ -203,16 +204,16 @@ $csrfToken = generateCsrfToken();
                                                 $now = new DateTime();
                                                 $days = (int)$now->diff($expires)->format('%r%a');
                                                 if ($days > 30) {
-                                                    $tokenBadge = '<span class="badge bg-success">Healthy (' . $days . 'd)</span>';
+                                                    $tokenBadge = '<span class="badge bg-success bg-opacity-15 text-success border border-success border-opacity-25">Healthy (' . $days . 'd)</span>';
                                                 } elseif ($days > 0) {
-                                                    $tokenBadge = '<span class="badge bg-warning text-dark">Expiring (' . $days . 'd)</span>';
+                                                    $tokenBadge = '<span class="badge bg-warning bg-opacity-15 text-warning border border-warning border-opacity-25">Expiring (' . $days . 'd)</span>';
                                                 } else {
-                                                    $tokenBadge = '<span class="badge bg-danger">Expired</span>';
+                                                    $tokenBadge = '<span class="badge bg-danger bg-opacity-15 text-danger border border-danger border-opacity-25">Expired</span>';
                                                 }
                                             }
                                         ?>
                                         <tr>
-                                            <td class="fw-semibold text-white">
+                                            <td class="fw-semibold">
                                                 <span class="d-inline-block rounded-circle me-2" style="width: 10px; height: 10px; background-color: <?= e($c['brand_color'] ?? '#0F2D55') ?>;"></span>
                                                 <?= e($c['business_name']) ?>
                                             </td>
@@ -221,9 +222,9 @@ $csrfToken = generateCsrfToken();
                                             <td><?= $tokenBadge ?></td>
                                             <td>
                                                 <?php if ($c['active']): ?>
-                                                    <span class="badge bg-success">Active</span>
+                                                    <span class="badge bg-success bg-opacity-15 text-success border border-success border-opacity-25">Active</span>
                                                 <?php else: ?>
-                                                    <span class="badge bg-danger">Inactive</span>
+                                                    <span class="badge bg-danger bg-opacity-15 text-danger border border-danger border-opacity-25">Inactive</span>
                                                 <?php endif; ?>
                                             </td>
                                             <td class="text-end">
@@ -248,10 +249,10 @@ $csrfToken = generateCsrfToken();
     <!-- Create New Client Modal -->
     <div class="modal fade" id="newClientModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content bg-dark text-white border-secondary">
-                <div class="modal-header border-secondary">
+            <div class="modal-content glass-card">
+                <div class="modal-header border-bottom">
                     <h5 class="modal-title"><i class="fa-solid fa-building-circle-check text-primary me-2"></i> Register New Client</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <form method="POST">
                     <input type="hidden" name="action" value="create_client">
@@ -259,21 +260,21 @@ $csrfToken = generateCsrfToken();
 
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label class="form-label text-muted">Business Name *</label>
-                            <input type="text" name="business_name" class="form-control bg-dark text-white border-secondary" placeholder="e.g. Sharma Jewellers" required>
+                            <label class="form-label text-muted small fw-semibold">Business Name *</label>
+                            <input type="text" name="business_name" class="form-control" placeholder="e.g. Sharma Jewellers" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label text-muted">Client Login Email *</label>
-                            <input type="email" name="email" class="form-control bg-dark text-white border-secondary" placeholder="client@sharmajewellers.com" required>
+                            <label class="form-label text-muted small fw-semibold">Client Login Email *</label>
+                            <input type="email" name="email" class="form-control" placeholder="client@sharmajewellers.com" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label text-muted">Client Password *</label>
-                            <input type="password" name="password" class="form-control bg-dark text-white border-secondary" placeholder="••••••••" required>
+                            <label class="form-label text-muted small fw-semibold">Client Password *</label>
+                            <input type="password" name="password" class="form-control" placeholder="••••••••" required>
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label text-muted">Reporting Currency</label>
-                                <select name="currency" class="form-select bg-dark text-white border-secondary">
+                                <label class="form-label text-muted small fw-semibold">Reporting Currency</label>
+                                <select name="currency" class="form-select">
                                     <option value="INR">INR (₹)</option>
                                     <option value="USD">USD ($)</option>
                                     <option value="AED">AED (AED)</option>
@@ -282,12 +283,12 @@ $csrfToken = generateCsrfToken();
                                 </select>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label text-muted">Brand Color Accent</label>
-                                <input type="color" name="brand_color" class="form-control form-control-color w-100 bg-dark border-secondary" value="#0F2D55">
+                                <label class="form-label text-muted small fw-semibold">Brand Color Accent</label>
+                                <input type="color" name="brand_color" class="form-control form-control-color w-100" value="#0F2D55">
                             </div>
                         </div>
                     </div>
-                    <div class="modal-footer border-secondary">
+                    <div class="modal-footer border-top">
                         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
                         <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk me-1"></i> Create Client Account</button>
                     </div>
@@ -297,5 +298,9 @@ $csrfToken = generateCsrfToken();
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        window.APP_URL = "<?= APP_URL ?>";
+    </script>
+    <script src="<?= APP_URL ?>/assets/js/dashboard.js"></script>
 </body>
 </html>

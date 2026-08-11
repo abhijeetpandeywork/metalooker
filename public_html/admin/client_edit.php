@@ -43,7 +43,6 @@ if (!$client) {
 $successMessage = $_GET['success'] ?? null;
 $errorMessage = $_GET['error'] ?? null;
 
-// Handle Form Submit
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $csrfToken = $_POST['csrf_token'] ?? '';
     if (!verifyCsrfToken($csrfToken)) {
@@ -95,7 +94,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
                 $db->beginTransaction();
 
-                // Update Client Record
                 $updateClient = $db->prepare("
                     UPDATE clients
                     SET business_name = ?,
@@ -107,7 +105,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ");
                 $updateClient->execute([$businessName, $logoPath, $brandColor, $currency, $metaAdAccountId, $clientId]);
 
-                // Upsert Dashboard Config
                 $upsertConfig = $db->prepare("
                     INSERT INTO dashboard_config (
                         client_id, default_range, show_spend, show_roas, show_leads,
@@ -134,7 +131,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 logActivity($_SESSION['user_id'], "Updated client settings for client ID {$clientId}");
 
                 $successMessage = "Client profile and dashboard configuration saved successfully.";
-                // Refresh local record
                 $stmt->execute([$clientId]);
                 $client = $stmt->fetch();
             } catch (Exception $e) {
@@ -182,7 +178,7 @@ $oauthUrl = "https://www.facebook.com/" . META_GRAPH_VERSION . "/dialog/oauth?" 
 $csrfToken = generateCsrfToken();
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -192,34 +188,32 @@ $csrfToken = generateCsrfToken();
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/style.css">
 </head>
-<body class="admin-body">
-    <!-- Admin Sidebar & Wrapper -->
-    <div class="d-flex">
+<body>
+    <div class="d-flex admin-wrapper">
         <!-- Sidebar Navigation -->
         <div class="admin-sidebar p-3 text-white">
             <div class="d-flex align-items-center mb-4">
-                <i class="fa-solid fa-chart-line fs-3 text-primary me-2"></i>
-                <h5 class="m-0 fw-bold">MetaPanel</h5>
+                <img src="<?= APP_URL ?>/assets/logos/digital_rubix_logo.svg" alt="Digital Rubix Logo" style="height: 40px;" class="me-2">
             </div>
             <hr class="text-secondary">
             <ul class="nav nav-pills flex-column mb-auto">
                 <li class="nav-item mb-1">
-                    <a href="<?= APP_URL ?>/admin/index.php" class="nav-link text-white">
+                    <a href="<?= APP_URL ?>/admin/index.php" class="nav-link">
                         <i class="fa-solid fa-gauge me-2"></i> Dashboard Overview
                     </a>
                 </li>
                 <li class="nav-item mb-1">
                     <a href="<?= APP_URL ?>/admin/clients.php" class="nav-link active">
-                        <i class="fa-solid fa-building-user me-2"></i> Client Management
+                        <i class="fa-solid fa-building-user me-2"></i> Client Directory
                     </a>
                 </li>
                 <li class="nav-item mb-1">
-                    <a href="<?= APP_URL ?>/admin/team.php" class="nav-link text-white">
+                    <a href="<?= APP_URL ?>/admin/team.php" class="nav-link">
                         <i class="fa-solid fa-users me-2"></i> Team Access
                     </a>
                 </li>
                 <li class="nav-item mb-1">
-                    <a href="<?= APP_URL ?>/admin/sync_status.php" class="nav-link text-white">
+                    <a href="<?= APP_URL ?>/admin/sync_status.php" class="nav-link">
                         <i class="fa-solid fa-arrows-rotate me-2"></i> Cron Sync Status
                     </a>
                 </li>
@@ -240,12 +234,17 @@ $csrfToken = generateCsrfToken();
         <div class="admin-content flex-grow-1 p-4">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
-                    <h3 class="fw-bold m-0 text-white">Configure Client: <?= e($client['business_name']) ?></h3>
-                    <p class="text-muted m-0">Set up branding, Meta API connection, and widget visibility</p>
+                    <h3 class="fw-bold m-0">Client Configuration: <?= e($client['business_name']) ?></h3>
+                    <p class="text-muted m-0">Custom branding, Meta Graph API onboarding, and widget visibility</p>
                 </div>
-                <a href="<?= APP_URL ?>/admin/clients.php" class="btn btn-outline-secondary">
-                    <i class="fa-solid fa-arrow-left me-1"></i> Back to Clients
-                </a>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-dark btn-theme-toggle me-2">
+                        <i class="fa-solid fa-moon me-1"></i> Dark Mode
+                    </button>
+                    <a href="<?= APP_URL ?>/admin/clients.php" class="btn btn-outline-secondary">
+                        <i class="fa-solid fa-arrow-left me-1"></i> Back to Clients
+                    </a>
+                </div>
             </div>
 
             <?php if ($successMessage): ?>
@@ -263,8 +262,8 @@ $csrfToken = generateCsrfToken();
             <?php endif; ?>
 
             <!-- Meta API Status Card -->
-            <div class="card bg-dark text-white border-secondary mb-4 shadow-sm">
-                <div class="card-header border-secondary d-flex justify-content-between align-items-center">
+            <div class="card glass-card mb-4 shadow-sm">
+                <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center">
                     <h5 class="m-0"><i class="fa-brands fa-meta me-2 text-primary"></i> Meta Marketing API Connection</h5>
                     <span class="badge bg-<?= $tokenHealth === 'green' ? 'success' : ($tokenHealth === 'yellow' ? 'warning' : 'danger') ?> fs-6">
                         <?= e($healthLabel) ?>
@@ -296,29 +295,44 @@ $csrfToken = generateCsrfToken();
                 <input type="hidden" name="csrf_token" value="<?= e($csrfToken) ?>">
 
                 <div class="row">
-                    <!-- Basic & Branding Settings -->
+                    <!-- Branding Settings -->
                     <div class="col-lg-6 mb-4">
-                        <div class="card bg-dark text-white border-secondary h-100 shadow-sm">
-                            <div class="card-header border-secondary">
-                                <h5 class="m-0"><i class="fa-solid fa-palette me-2 text-info"></i> Branding & General Info</h5>
+                        <div class="card glass-card h-100 shadow-sm">
+                            <div class="card-header bg-transparent border-bottom">
+                                <h5 class="m-0"><i class="fa-solid fa-palette me-2 text-info"></i> Branding & Portal Customization</h5>
                             </div>
                             <div class="card-body">
                                 <div class="mb-3">
-                                    <label class="form-label text-muted">Business Name</label>
-                                    <input type="text" name="business_name" class="form-control bg-dark text-white border-secondary" value="<?= e($client['business_name']) ?>" required>
+                                    <label class="form-label text-muted small fw-semibold">
+                                        Business Name
+                                        <button type="button" class="info-popover-btn" data-bs-toggle="popover" title="Business Name" data-bs-content="Displayed at top of client dashboard report header.">
+                                            <i class="fa-solid fa-circle-info"></i>
+                                        </button>
+                                    </label>
+                                    <input type="text" name="business_name" class="form-control" value="<?= e($client['business_name']) ?>" required>
                                 </div>
                                 <div class="mb-3">
-                                    <label class="form-label text-muted">Client Login Email</label>
-                                    <input type="email" class="form-control bg-dark text-white border-secondary" value="<?= e($client['client_email']) ?>" readonly disabled>
+                                    <label class="form-label text-muted small fw-semibold">Client Login Email</label>
+                                    <input type="email" class="form-control bg-body-tertiary" value="<?= e($client['client_email']) ?>" readonly disabled>
                                 </div>
                                 <div class="row mb-3">
                                     <div class="col-md-6">
-                                        <label class="form-label text-muted">Brand Color Accent</label>
-                                        <input type="color" name="brand_color" class="form-control form-control-color w-100 bg-dark border-secondary" value="<?= e($client['brand_color'] ?? '#0F2D55') ?>">
+                                        <label class="form-label text-muted small fw-semibold">
+                                            Brand Color Accent
+                                            <button type="button" class="info-popover-btn" data-bs-toggle="popover" title="Brand Color" data-bs-content="Injects client brand accent into dashboard header borders, buttons, and line charts.">
+                                                <i class="fa-solid fa-circle-info"></i>
+                                            </button>
+                                        </label>
+                                        <input type="color" name="brand_color" class="form-control form-control-color w-100" value="<?= e($client['brand_color'] ?? '#0F2D55') ?>">
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label text-muted">Currency Code</label>
-                                        <select name="currency" class="form-select bg-dark text-white border-secondary">
+                                        <label class="form-label text-muted small fw-semibold">
+                                            Currency Code
+                                            <button type="button" class="info-popover-btn" data-bs-toggle="popover" title="Currency" data-bs-content="Formats spend, CPC, and CPM metrics in the requested currency symbol.">
+                                                <i class="fa-solid fa-circle-info"></i>
+                                            </button>
+                                        </label>
+                                        <select name="currency" class="form-select">
                                             <option value="INR" <?= ($client['currency'] ?? 'INR') === 'INR' ? 'selected' : '' ?>>INR (₹)</option>
                                             <option value="USD" <?= ($client['currency'] ?? '') === 'USD' ? 'selected' : '' ?>>USD ($)</option>
                                             <option value="AED" <?= ($client['currency'] ?? '') === 'AED' ? 'selected' : '' ?>>AED (AED)</option>
@@ -328,16 +342,21 @@ $csrfToken = generateCsrfToken();
                                     </div>
                                 </div>
                                 <div class="mb-3">
-                                    <label class="form-label text-muted">Client Ad Account ID (Manual Override)</label>
-                                    <input type="text" name="meta_ad_account_id" class="form-control bg-dark text-white border-secondary" placeholder="act_123456789" value="<?= e($client['meta_ad_account_id']) ?>">
+                                    <label class="form-label text-muted small fw-semibold">
+                                        Client Ad Account ID
+                                        <button type="button" class="info-popover-btn" data-bs-toggle="popover" title="Ad Account ID" data-bs-content="Standard Meta Ad Account ID format: act_1234567890. Automatically populated during OAuth or overridden manually.">
+                                            <i class="fa-solid fa-circle-info"></i>
+                                        </button>
+                                    </label>
+                                    <input type="text" name="meta_ad_account_id" class="form-control" placeholder="act_123456789" value="<?= e($client['meta_ad_account_id']) ?>">
                                 </div>
                                 <div class="mb-3">
-                                    <label class="form-label text-muted">Upload Custom Client Logo</label>
-                                    <input type="file" name="logo" class="form-control bg-dark text-white border-secondary" accept="image/*">
+                                    <label class="form-label text-muted small fw-semibold">Upload Custom Logo</label>
+                                    <input type="file" name="logo" class="form-control" accept="image/*">
                                     <?php if (!empty($client['logo_path'])): ?>
                                         <div class="mt-2">
                                             <small class="text-muted">Current Logo:</small><br>
-                                            <img src="<?= e($client['logo_path']) ?>" alt="Logo" style="max-height: 45px;" class="img-thumbnail bg-secondary mt-1">
+                                            <img src="<?= e($client['logo_path']) ?>" alt="Logo" style="max-height: 45px;" class="img-thumbnail mt-1">
                                         </div>
                                     <?php endif; ?>
                                 </div>
@@ -347,18 +366,18 @@ $csrfToken = generateCsrfToken();
 
                     <!-- Dashboard Widget Controls -->
                     <div class="col-lg-6 mb-4">
-                        <div class="card bg-dark text-white border-secondary h-100 shadow-sm">
-                            <div class="card-header border-secondary">
+                        <div class="card glass-card h-100 shadow-sm">
+                            <div class="card-header bg-transparent border-bottom">
                                 <h5 class="m-0"><i class="fa-solid fa-sliders me-2 text-warning"></i> Dashboard Customization</h5>
                             </div>
                             <div class="card-body">
                                 <div class="mb-3">
-                                    <label class="form-label text-muted">Custom Report Title</label>
-                                    <input type="text" name="report_title" class="form-control bg-dark text-white border-secondary" value="<?= e($client['report_title'] ?? 'My Ads Performance') ?>" required>
+                                    <label class="form-label text-muted small fw-semibold">Custom Report Title</label>
+                                    <input type="text" name="report_title" class="form-control" value="<?= e($client['report_title'] ?? 'My Ads Performance') ?>" required>
                                 </div>
                                 <div class="mb-3">
-                                    <label class="form-label text-muted">Default Date Range Preset</label>
-                                    <select name="default_range" class="form-select bg-dark text-white border-secondary">
+                                    <label class="form-label text-muted small fw-semibold">Default Date Range Preset</label>
+                                    <select name="default_range" class="form-select">
                                         <option value="last_7" <?= ($client['default_range'] ?? '') === 'last_7' ? 'selected' : '' ?>>Last 7 Days</option>
                                         <option value="last_30" <?= ($client['default_range'] ?? 'last_30') === 'last_30' ? 'selected' : '' ?>>Last 30 Days</option>
                                         <option value="this_month" <?= ($client['default_range'] ?? '') === 'this_month' ? 'selected' : '' ?>>This Month</option>
@@ -366,54 +385,42 @@ $csrfToken = generateCsrfToken();
                                     </select>
                                 </div>
 
-                                <h6 class="text-white mt-4 mb-3 border-bottom border-secondary pb-2">Visible Metrics & Widgets</h6>
+                                <h6 class="mt-4 mb-3 border-bottom pb-2">Visible Metrics & Widgets</h6>
                                 <div class="row">
                                     <div class="col-6 mb-2">
                                         <div class="form-check form-switch">
                                             <input class="form-check-input" type="checkbox" name="show_spend" id="show_spend" <?= ($client['show_spend'] ?? 1) ? 'checked' : '' ?>>
-                                            <label class="form-check-label text-light-muted" for="show_spend">Total Spend</label>
+                                            <label class="form-check-label text-muted small fw-semibold" for="show_spend">Total Spend</label>
                                         </div>
                                     </div>
                                     <div class="col-6 mb-2">
                                         <div class="form-check form-switch">
                                             <input class="form-check-input" type="checkbox" name="show_roas" id="show_roas" <?= ($client['show_roas'] ?? 1) ? 'checked' : '' ?>>
-                                            <label class="form-check-label text-light-muted" for="show_roas">Purchase ROAS</label>
+                                            <label class="form-check-label text-muted small fw-semibold" for="show_roas">Purchase ROAS</label>
                                         </div>
                                     </div>
                                     <div class="col-6 mb-2">
                                         <div class="form-check form-switch">
                                             <input class="form-check-input" type="checkbox" name="show_leads" id="show_leads" <?= ($client['show_leads'] ?? 1) ? 'checked' : '' ?>>
-                                            <label class="form-check-label text-light-muted" for="show_leads">Conversions / Results</label>
+                                            <label class="form-check-label text-muted small fw-semibold" for="show_leads">Conversions / Results</label>
                                         </div>
                                     </div>
                                     <div class="col-6 mb-2">
                                         <div class="form-check form-switch">
                                             <input class="form-check-input" type="checkbox" name="show_cpc" id="show_cpc" <?= ($client['show_cpc'] ?? 1) ? 'checked' : '' ?>>
-                                            <label class="form-check-label text-light-muted" for="show_cpc">Avg. CPC</label>
+                                            <label class="form-check-label text-muted small fw-semibold" for="show_cpc">Avg. CPC</label>
                                         </div>
                                     </div>
                                     <div class="col-6 mb-2">
                                         <div class="form-check form-switch">
                                             <input class="form-check-input" type="checkbox" name="show_ctr" id="show_ctr" <?= ($client['show_ctr'] ?? 1) ? 'checked' : '' ?>>
-                                            <label class="form-check-label text-light-muted" for="show_ctr">Avg. CTR</label>
+                                            <label class="form-check-label text-muted small fw-semibold" for="show_ctr">Avg. CTR</label>
                                         </div>
                                     </div>
                                     <div class="col-6 mb-2">
                                         <div class="form-check form-switch">
                                             <input class="form-check-input" type="checkbox" name="show_impressions" id="show_impressions" <?= ($client['show_impressions'] ?? 1) ? 'checked' : '' ?>>
-                                            <label class="form-check-label text-light-muted" for="show_impressions">Impressions & Reach</label>
-                                        </div>
-                                    </div>
-                                    <div class="col-6 mb-2">
-                                        <div class="form-check form-switch">
-                                            <input class="form-check-input" type="checkbox" name="show_campaigns" id="show_campaigns" <?= ($client['show_campaigns'] ?? 1) ? 'checked' : '' ?>>
-                                            <label class="form-check-label text-light-muted" for="show_campaigns">Campaign Breakdown</label>
-                                        </div>
-                                    </div>
-                                    <div class="col-6 mb-2">
-                                        <div class="form-check form-switch">
-                                            <input class="form-check-input" type="checkbox" name="show_adsets" id="show_adsets" <?= ($client['show_adsets'] ?? 1) ? 'checked' : '' ?>>
-                                            <label class="form-check-label text-light-muted" for="show_adsets">Ad Sets Breakdown</label>
+                                            <label class="form-check-label text-muted small fw-semibold" for="show_impressions">Impressions & Reach</label>
                                         </div>
                                     </div>
                                 </div>
@@ -432,5 +439,9 @@ $csrfToken = generateCsrfToken();
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        window.APP_URL = "<?= APP_URL ?>";
+    </script>
+    <script src="<?= APP_URL ?>/assets/js/dashboard.js"></script>
 </body>
 </html>
