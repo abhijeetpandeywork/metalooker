@@ -13,7 +13,7 @@ require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/helpers.php';
 
-requireAdmin();
+requireRole(['super_admin', 'team_member']);
 
 $db = Database::getInstance();
 $successMessage = $_GET['success'] ?? null;
