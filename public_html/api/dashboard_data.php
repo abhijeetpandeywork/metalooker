@@ -68,7 +68,20 @@ if (empty($from) || empty($to)) {
 }
 
 try {
-    // 1. Aggregated Key Performance Indicators (Account Level)
+    // Auto-sync check: if client has no cached data yet, trigger initial sync on demand
+    $countCheck = $db->prepare("SELECT COUNT(*) as cnt FROM ad_data_cache WHERE client_id = ?");
+    $countCheck->execute([$clientId]);
+    if (($countCheck->fetch()['cnt'] ?? 0) === 0) {
+        $cStmt = $db->prepare("SELECT * FROM clients WHERE id = ? LIMIT 1");
+        $cStmt->execute([$clientId]);
+        $clientObj = $cStmt->fetch();
+        if ($clientObj) {
+            require_once __DIR__ . '/../../cron/sync_all.php';
+            syncClientData($clientObj);
+        }
+    }
+
+    // 1. Aggregated Key Performance Indicators (Account / Campaign Level)
     $kpiStmt = $db->prepare("
         SELECT
             SUM(impressions) as impressions,
@@ -77,10 +90,10 @@ try {
             SUM(spend) as spend,
             SUM(conversions) as conversions
         FROM ad_data_cache
-        WHERE client_id = ? AND level = 'campaign'
-        AND date_start >= ? AND date_stop <= ?
+        WHERE client_id = ? AND level IN ('account', 'campaign')
+        AND date_start <= ? AND date_stop >= ?
     ");
-    $kpiStmt->execute([$clientId, $from, $to]);
+    $kpiStmt->execute([$clientId, $to, $from]);
     $kpisRaw = $kpiStmt->fetch();
 
     $impressions = (int)($kpisRaw['impressions'] ?? 0);
@@ -98,10 +111,10 @@ try {
     $roasStmt = $db->prepare("
         SELECT AVG(roas) as avg_roas
         FROM ad_data_cache
-        WHERE client_id = ? AND level = 'campaign'
-        AND date_start >= ? AND date_stop <= ? AND roas > 0
+        WHERE client_id = ? AND level IN ('account', 'campaign')
+        AND date_start <= ? AND date_stop >= ? AND roas > 0
     ");
-    $roasStmt->execute([$clientId, $from, $to]);
+    $roasStmt->execute([$clientId, $to, $from]);
     $avgRoas = (float)($roasStmt->fetch()['avg_roas'] ?? 0.0);
 
     // 2. Daily Spend & Performance Series (Chart.js)
@@ -112,12 +125,12 @@ try {
             SUM(impressions) as impressions,
             SUM(clicks) as clicks
         FROM ad_data_cache
-        WHERE client_id = ? AND level = 'campaign'
-        AND date_start >= ? AND date_stop <= ?
+        WHERE client_id = ? AND level IN ('account', 'campaign')
+        AND date_start <= ? AND date_stop >= ?
         GROUP BY date_start
         ORDER BY date_start ASC
     ");
-    $seriesStmt->execute([$clientId, $from, $to]);
+    $seriesStmt->execute([$clientId, $to, $from]);
     $dailySeries = $seriesStmt->fetchAll();
 
     // 3. Campaign Breakdown Table
@@ -132,11 +145,11 @@ try {
             AVG(roas) as roas
         FROM ad_data_cache
         WHERE client_id = ? AND level = 'campaign'
-        AND date_start >= ? AND date_stop <= ?
+        AND date_start <= ? AND date_stop >= ?
         GROUP BY object_id, object_name
         ORDER BY spend DESC
     ");
-    $cmpStmt->execute([$clientId, $from, $to]);
+    $cmpStmt->execute([$clientId, $to, $from]);
     $campaigns = array_map(function($row) {
         $imp = (int)$row['impressions'];
         $clk = (int)$row['clicks'];
@@ -160,11 +173,11 @@ try {
             AVG(roas) as roas
         FROM ad_data_cache
         WHERE client_id = ? AND level = 'adset'
-        AND date_start >= ? AND date_stop <= ?
+        AND date_start <= ? AND date_stop >= ?
         GROUP BY object_id, object_name
         ORDER BY spend DESC
     ");
-    $adsetStmt->execute([$clientId, $from, $to]);
+    $adsetStmt->execute([$clientId, $to, $from]);
     $adsets = array_map(function($row) {
         $imp = (int)$row['impressions'];
         $clk = (int)$row['clicks'];
@@ -187,11 +200,11 @@ try {
             AVG(roas) as roas
         FROM ad_data_cache
         WHERE client_id = ? AND level = 'ad'
-        AND date_start >= ? AND date_stop <= ?
+        AND date_start <= ? AND date_stop >= ?
         GROUP BY object_id, object_name
         ORDER BY spend DESC
     ");
-    $adStmt->execute([$clientId, $from, $to]);
+    $adStmt->execute([$clientId, $to, $from]);
     $ads = array_map(function($row) {
         $imp = (int)$row['impressions'];
         $clk = (int)$row['clicks'];

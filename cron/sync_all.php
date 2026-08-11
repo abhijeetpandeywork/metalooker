@@ -175,34 +175,35 @@ function syncClientData(array $client): array {
     }
 }
 
-// Global Execution Routine
-echo "[" . date('Y-m-d H:i:s') . "] Starting MetaPanel Cron Sync Loop...\n";
+// Global Execution Routine (Only run when executed directly as a CLI or standalone script)
+if (php_sapi_name() === 'cli' || (isset($_SERVER['SCRIPT_FILENAME']) && basename($_SERVER['SCRIPT_FILENAME']) === 'sync_all.php')) {
+    echo "[" . date('Y-m-d H:i:s') . "] Starting MetaPanel Cron Sync Loop...\n";
 
-try {
-    $db = Database::getInstance();
-    $stmt = $db->prepare("SELECT * FROM clients WHERE active = 1 AND (meta_access_token IS NOT NULL OR 1=1)");
-    $stmt->execute();
-    $clients = $stmt->fetchAll();
+    try {
+        $db = Database::getInstance();
+        $stmt = $db->prepare("SELECT * FROM clients WHERE active = 1 AND (meta_access_token IS NOT NULL OR 1=1)");
+        $stmt->execute();
+        $clients = $stmt->fetchAll();
 
-    echo "Found " . count($clients) . " active client account(s) to process.\n";
+        echo "Found " . count($clients) . " active client account(s) to process.\n";
 
-    foreach ($clients as $client) {
-        echo "Processing Client: {$client['business_name']} (ID: {$client['id']})... ";
-        $result = syncClientData($client);
+        foreach ($clients as $client) {
+            echo "Processing Client: {$client['business_name']} (ID: {$client['id']})... ";
+            $result = syncClientData($client);
 
-        if ($result['status'] === 'success') {
-            echo "SUCCESS ({$result['rows']} rows updated)\n";
-        } else {
-            echo "ERROR ({$result['error']})\n";
+            if ($result['status'] === 'success') {
+                echo "SUCCESS ({$result['rows']} rows updated)\n";
+            } else {
+                echo "ERROR ({$result['error']})\n";
+            }
+
+            usleep(200000);
         }
 
-        // 200ms throttle between clients to prevent rate limits
-        usleep(200000);
+        echo "[" . date('Y-m-d H:i:s') . "] Cron Sync Cycle Finished Successfully.\n";
+
+    } catch (Exception $e) {
+        echo "Fatal Cron Failure: " . $e->getMessage() . "\n";
+        exit(1);
     }
-
-    echo "[" . date('Y-m-d H:i:s') . "] Cron Sync Cycle Finished Successfully.\n";
-
-} catch (Exception $e) {
-    echo "Fatal Cron Failure: " . $e->getMessage() . "\n";
-    exit(1);
 }
