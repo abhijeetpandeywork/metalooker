@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const currencyInput = document.getElementById('meta-currency');
     const clientId = clientIdInput ? clientIdInput.value : '';
     const currency = currencyInput ? currencyInput.value : 'INR';
+    let currentActiveCurrency = currency;
 
     let currentFrom = '';
     let currentTo = '';
@@ -152,7 +153,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 adsData = data.ads || [];
                 dailySeriesCache = data.chart_daily || [];
 
-                updateKpiCards(data.kpis, currency);
+                currentActiveCurrency = data.client_currency || currency;
+                updateKpiCards(data.kpis, data.trends, currentActiveCurrency);
                 renderSpendLineChart(dailySeriesCache);
                 renderImpClickBarChart(campaignsData);
 
@@ -354,7 +356,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        const sym = getCurrencySymbol(currency);
+        const sym = getCurrencySymbol(currentActiveCurrency);
         let html = '';
 
         rows.forEach(r => {

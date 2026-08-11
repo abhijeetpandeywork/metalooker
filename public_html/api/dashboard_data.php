@@ -280,10 +280,12 @@ try {
     }, $adStmt->fetchAll());
 
     echo json_encode([
-        'success'   => true,
-        'date_from' => $from,
-        'date_to'   => $to,
-        'config'    => $config,
+        'success'         => true,
+        'date_from'       => $from,
+        'date_to'         => $to,
+        'client_currency' => $client['currency'] ?? 'INR',
+        'client_country'  => $client['country_name'] ?? 'India',
+        'config'          => $config,
         'kpis'      => [
             'spend'           => $spend,
             'impressions'     => $impressions,
