@@ -73,151 +73,167 @@ function syncClientData(array $client): array {
             $dateStart = (new DateTime())->modify('-90 days')->format('Y-m-d');
         }
 
-        // Cleanly wipe existing cache records in date window to guarantee fresh overwrite
-        $cleanStmt = $db->prepare("DELETE FROM ad_data_cache WHERE client_id = ? AND date_start >= ? AND date_start <= ?");
-        $cleanStmt->execute([$clientId, $dateStart, $dateStop]);
-
         $metaApi = new MetaAPI($plainToken, $adAccountId);
         $levels = ['account', 'campaign', 'adset', 'ad'];
-        $totalInserted = 0;
+        $allInsights = [];
 
-        $driver = $db->getAttribute(PDO::ATTR_DRIVER_NAME);
-        if ($driver === 'sqlite') {
-            $upsertStmt = $db->prepare("
-                INSERT OR REPLACE INTO ad_data_cache (
-                    client_id, level, object_id, object_name, date_start, date_stop,
-                    impressions, reach, clicks, spend, cpc, ctr, cpm, conversions,
-                    cost_per_result, roas, frequency
-                ) VALUES (
-                    ?, ?, ?, ?, ?, ?,
-                    ?, ?, ?, ?, ?, ?, ?, ?,
-                    ?, ?, ?
-                )
-            ");
-        } else {
-            $upsertStmt = $db->prepare("
-                INSERT INTO ad_data_cache (
-                    client_id, level, object_id, object_name, date_start, date_stop,
-                    impressions, reach, clicks, spend, cpc, ctr, cpm, conversions,
-                    cost_per_result, roas, frequency
-                ) VALUES (
-                    ?, ?, ?, ?, ?, ?,
-                    ?, ?, ?, ?, ?, ?, ?, ?,
-                    ?, ?, ?
-                )
-                ON DUPLICATE KEY UPDATE
-                    object_name = VALUES(object_name),
-                    impressions = VALUES(impressions),
-                    reach = VALUES(reach),
-                    clicks = VALUES(clicks),
-                    spend = VALUES(spend),
-                    cpc = VALUES(cpc),
-                    ctr = VALUES(ctr),
-                    cpm = VALUES(cpm),
-                    conversions = VALUES(conversions),
-                    cost_per_result = VALUES(cost_per_result),
-                    roas = VALUES(roas),
-                    frequency = VALUES(frequency),
-                    synced_at = NOW()
-            ");
+        // Fetch all insights from Meta Graph API BEFORE touching the database
+        foreach ($levels as $lvl) {
+            $allInsights[$lvl] = $metaApi->getInsights($lvl, $dateStart, $dateStop);
         }
 
-        foreach ($levels as $lvl) {
-            $insights = $metaApi->getInsights($lvl, $dateStart, $dateStop);
+        $totalInserted = 0;
 
-            foreach ($insights as $row) {
-                $objectId = match ($lvl) {
-                    'account'  => $adAccountId ?: 'account_total',
-                    'campaign' => $row['campaign_id'] ?? ('cmp_' . md5($row['campaign_name'] ?? '')),
-                    'adset'    => $row['adset_id'] ?? ('ads_' . md5($row['adset_name'] ?? '')),
-                    'ad'       => $row['ad_id'] ?? ('ad_' . md5($row['ad_name'] ?? '')),
-                };
+        // Wrap database deletion and insertion in an atomic transaction
+        $db->beginTransaction();
 
-                $objectName = match ($lvl) {
-                    'account'  => $client['business_name'] . ' (Account Total)',
-                    'campaign' => $row['campaign_name'] ?? 'Unnamed Campaign',
-                    'adset'    => $row['adset_name'] ?? 'Unnamed Ad Set',
-                    'ad'       => $row['ad_name'] ?? 'Unnamed Ad',
-                };
+        try {
+            $cleanStmt = $db->prepare("DELETE FROM ad_data_cache WHERE client_id = ? AND date_start >= ? AND date_start <= ?");
+            $cleanStmt->execute([$clientId, $dateStart, $dateStop]);
 
-                $impressions    = (int)($row['impressions'] ?? 0);
-                $reach          = (int)($row['reach'] ?? 0);
-                $clicks         = (int)($row['clicks'] ?? 0);
-                $spend          = (float)($row['spend'] ?? 0.0);
-                $cpc            = (float)($row['cpc'] ?? 0.0);
-                $ctr            = (float)($row['ctr'] ?? 0.0);
-                $cpm            = (float)($row['cpm'] ?? 0.0);
-                $frequency      = (float)($row['frequency'] ?? 1.0);
-                $rowStart       = $row['date_start'] ?? $dateStart;
-                $rowStop        = $row['date_stop'] ?? $dateStop;
+            $driver = $db->getAttribute(PDO::ATTR_DRIVER_NAME);
+            if ($driver === 'sqlite') {
+                $upsertStmt = $db->prepare("
+                    INSERT OR REPLACE INTO ad_data_cache (
+                        client_id, level, object_id, object_name, date_start, date_stop,
+                        impressions, reach, clicks, spend, cpc, ctr, cpm, conversions,
+                        cost_per_result, roas, frequency
+                    ) VALUES (
+                        ?, ?, ?, ?, ?, ?,
+                        ?, ?, ?, ?, ?, ?, ?, ?,
+                        ?, ?, ?
+                    )
+                ");
+            } else {
+                $upsertStmt = $db->prepare("
+                    INSERT INTO ad_data_cache (
+                        client_id, level, object_id, object_name, date_start, date_stop,
+                        impressions, reach, clicks, spend, cpc, ctr, cpm, conversions,
+                        cost_per_result, roas, frequency
+                    ) VALUES (
+                        ?, ?, ?, ?, ?, ?,
+                        ?, ?, ?, ?, ?, ?, ?, ?,
+                        ?, ?, ?
+                    )
+                    ON DUPLICATE KEY UPDATE
+                        object_name = VALUES(object_name),
+                        impressions = VALUES(impressions),
+                        reach = VALUES(reach),
+                        clicks = VALUES(clicks),
+                        spend = VALUES(spend),
+                        cpc = VALUES(cpc),
+                        ctr = VALUES(ctr),
+                        cpm = VALUES(cpm),
+                        conversions = VALUES(conversions),
+                        cost_per_result = VALUES(cost_per_result),
+                        roas = VALUES(roas),
+                        frequency = VALUES(frequency),
+                        synced_at = NOW()
+                ");
+            }
 
-                // Robust Meta Actions & ROAS Extraction Engine
-                $conversions = 0;
-                if (isset($row['conversions']) && is_numeric($row['conversions'])) {
-                    $conversions = (int)$row['conversions'];
-                } elseif (isset($row['actions']) && is_array($row['actions'])) {
-                    $priorityActions = [
-                        'lead',
-                        'purchase',
-                        'omni_purchase',
-                        'onsite_conversion.messaging_conversation_started_7d',
-                        'contact',
-                        'complete_registration',
-                        'schedule',
-                        'submit_application',
-                        'subscribe',
-                        'landing_page_view'
-                    ];
-                    foreach ($row['actions'] as $act) {
-                        $type = $act['action_type'] ?? '';
-                        $val  = (int)($act['value'] ?? 0);
-                        if (in_array($type, $priorityActions, true)) {
-                            $conversions += $val;
-                        }
-                    }
-                    if ($conversions === 0) {
+            foreach ($levels as $lvl) {
+                $insights = $allInsights[$lvl] ?? [];
+
+                foreach ($insights as $row) {
+                    $objectId = match ($lvl) {
+                        'account'  => $adAccountId ?: 'account_total',
+                        'campaign' => $row['campaign_id'] ?? ('cmp_' . md5($row['campaign_name'] ?? '')),
+                        'adset'    => $row['adset_id'] ?? ('ads_' . md5($row['adset_name'] ?? '')),
+                        'ad'       => $row['ad_id'] ?? ('ad_' . md5($row['ad_name'] ?? '')),
+                    };
+
+                    $objectName = match ($lvl) {
+                        'account'  => $client['business_name'] . ' (Account Total)',
+                        'campaign' => $row['campaign_name'] ?? 'Unnamed Campaign',
+                        'adset'    => $row['adset_name'] ?? 'Unnamed Ad Set',
+                        'ad'       => $row['ad_name'] ?? 'Unnamed Ad',
+                    };
+
+                    $impressions    = (int)($row['impressions'] ?? 0);
+                    $reach          = (int)($row['reach'] ?? 0);
+                    $clicks         = (int)($row['clicks'] ?? 0);
+                    $spend          = (float)($row['spend'] ?? 0.0);
+                    $cpc            = (float)($row['cpc'] ?? 0.0);
+                    $ctr            = (float)($row['ctr'] ?? 0.0);
+                    $cpm            = (float)($row['cpm'] ?? 0.0);
+                    $frequency      = (float)($row['frequency'] ?? 1.0);
+                    $rowStart       = $row['date_start'] ?? $dateStart;
+                    $rowStop        = $row['date_stop'] ?? $dateStop;
+
+                    // Robust Meta Actions & ROAS Extraction Engine
+                    $conversions = 0;
+                    if (isset($row['conversions']) && is_numeric($row['conversions'])) {
+                        $conversions = (int)$row['conversions'];
+                    } elseif (isset($row['actions']) && is_array($row['actions'])) {
+                        $priorityActions = [
+                            'lead',
+                            'purchase',
+                            'omni_purchase',
+                            'onsite_conversion.messaging_conversation_started_7d',
+                            'contact',
+                            'complete_registration',
+                            'schedule',
+                            'submit_application',
+                            'subscribe',
+                            'landing_page_view'
+                        ];
                         foreach ($row['actions'] as $act) {
                             $type = $act['action_type'] ?? '';
-                            if (str_contains($type, 'conversion') || str_contains($type, 'lead') || str_contains($type, 'purchase') || str_contains($type, 'messaging')) {
-                                $conversions += (int)($act['value'] ?? 0);
+                            $val  = (int)($act['value'] ?? 0);
+                            if (in_array($type, $priorityActions, true)) {
+                                $conversions += $val;
+                            }
+                        }
+                        if ($conversions === 0) {
+                            foreach ($row['actions'] as $act) {
+                                $type = $act['action_type'] ?? '';
+                                if (str_contains($type, 'conversion') || str_contains($type, 'lead') || str_contains($type, 'purchase') || str_contains($type, 'messaging')) {
+                                    $conversions += (int)($act['value'] ?? 0);
+                                }
                             }
                         }
                     }
-                }
 
-                $roas = 0.0;
-                if (isset($row['roas']) && is_numeric($row['roas'])) {
-                    $roas = (float)$row['roas'];
-                } elseif (isset($row['purchase_roas']) && is_array($row['purchase_roas'])) {
-                    foreach ($row['purchase_roas'] as $rItem) {
-                        if (!empty($rItem['value'])) {
-                            $roas = (float)$rItem['value'];
-                            break;
+                    $roas = 0.0;
+                    if (isset($row['roas']) && is_numeric($row['roas'])) {
+                        $roas = (float)$row['roas'];
+                    } elseif (isset($row['purchase_roas']) && is_array($row['purchase_roas'])) {
+                        foreach ($row['purchase_roas'] as $rItem) {
+                            if (!empty($rItem['value'])) {
+                                $roas = (float)$rItem['value'];
+                                break;
+                            }
+                        }
+                    } elseif ($spend > 0 && isset($row['action_values']) && is_array($row['action_values'])) {
+                        $purchaseVal = 0.0;
+                        foreach ($row['action_values'] as $av) {
+                            $type = $av['action_type'] ?? '';
+                            if (in_array($type, ['purchase', 'omni_purchase', 'offsite_conversion.fb_pixel_purchase'], true)) {
+                                $purchaseVal += (float)($av['value'] ?? 0.0);
+                            }
+                        }
+                        if ($purchaseVal > 0) {
+                            $roas = round($purchaseVal / $spend, 2);
                         }
                     }
-                } elseif ($spend > 0 && isset($row['action_values']) && is_array($row['action_values'])) {
-                    $purchaseVal = 0.0;
-                    foreach ($row['action_values'] as $av) {
-                        $type = $av['action_type'] ?? '';
-                        if (in_array($type, ['purchase', 'omni_purchase', 'offsite_conversion.fb_pixel_purchase'], true)) {
-                            $purchaseVal += (float)($av['value'] ?? 0.0);
-                        }
-                    }
-                    if ($purchaseVal > 0) {
-                        $roas = round($purchaseVal / $spend, 2);
-                    }
+
+                    $costPerResult = $conversions > 0 ? round($spend / $conversions, 2) : 0.0;
+
+                    $upsertStmt->execute([
+                        $clientId, $lvl, $objectId, $objectName, $rowStart, $rowStop,
+                        $impressions, $reach, $clicks, $spend, $cpc, $ctr, $cpm, $conversions,
+                        $costPerResult, $roas, $frequency
+                    ]);
+
+                    $totalInserted++;
                 }
-
-                $costPerResult = $conversions > 0 ? round($spend / $conversions, 2) : 0.0;
-
-                $upsertStmt->execute([
-                    $clientId, $lvl, $objectId, $objectName, $rowStart, $rowStop,
-                    $impressions, $reach, $clicks, $spend, $cpc, $ctr, $cpm, $conversions,
-                    $costPerResult, $roas, $frequency
-                ]);
-
-                $totalInserted++;
             }
+
+            $db->commit();
+        } catch (Exception $txEx) {
+            $db->rollBack();
+            throw $txEx;
         }
 
         // Record success log
