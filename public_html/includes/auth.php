@@ -44,14 +44,21 @@ function login(string $email, string $password): array {
             $_SESSION['role']       = $user['role']; // Legacy alias for backward compatibility
             $_SESSION['login_time'] = time();
 
-            // If user is a client, fetch their associated client_id
+            // If user is a client, fetch their associated client_id and verify account active status
             if ($user['role'] === 'client') {
-                $clientStmt = $db->prepare("SELECT id FROM clients WHERE user_id = ? LIMIT 1");
+                $clientStmt = $db->prepare("SELECT id, active FROM clients WHERE user_id = ? LIMIT 1");
                 $clientStmt->execute([$user['id']]);
                 $client = $clientStmt->fetch();
-                if ($client) {
-                    $_SESSION['client_id'] = (int)$client['id'];
+
+                if (!$client || (int)($client['active'] ?? 0) !== 1) {
+                    logActivity(null, "Blocked login attempt for paused client user: {$email}");
+                    return [
+                        'success' => false,
+                        'message' => 'Your client account is currently paused by the agency administrator. Login is disabled.'
+                    ];
                 }
+
+                $_SESSION['client_id'] = (int)$client['id'];
             }
 
             logActivity((int)$user['id'], 'User logged in successfully');
@@ -117,6 +124,21 @@ function isLoggedIn(): bool {
     if (isset($_SESSION['login_time']) && (time() - $_SESSION['login_time'] > $maxLifetime)) {
         logout();
         return false;
+    }
+
+    // If client user, verify account is still active in database
+    $currentRole = $_SESSION['user_role'] ?? ($_SESSION['role'] ?? '');
+    if ($currentRole === 'client' && isset($_SESSION['user_id'])) {
+        try {
+            $db = Database::getInstance();
+            $cCheck = $db->prepare("SELECT active FROM clients WHERE user_id = ? LIMIT 1");
+            $cCheck->execute([$_SESSION['user_id']]);
+            $cData = $cCheck->fetch();
+            if ($cData && (int)($cData['active'] ?? 0) !== 1) {
+                logout();
+                return false;
+            }
+        } catch (Exception $eActiveCheck) {}
     }
 
     return true;

@@ -25,6 +25,10 @@ if (isLoggedIn()) {
 
 $errorMessage = null;
 
+if (isset($_GET['error']) && $_GET['error'] === 'account_paused') {
+    $errorMessage = "Your client account has been paused by the agency administrator. Login access is disabled.";
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $csrfToken = $_POST['csrf_token'] ?? '';
     if (!verifyCsrfToken($csrfToken)) {
