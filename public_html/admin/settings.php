@@ -45,8 +45,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$currentAppId     = META_APP_ID ?: getSystemSetting('meta_app_id', '');
-$currentAppSecret = META_APP_SECRET ?: getSystemSetting('meta_app_secret', '');
+$currentAppId     = getSystemSetting('meta_app_id', META_APP_ID);
+$currentAppSecret = getSystemSetting('meta_app_secret', META_APP_SECRET);
+if (empty($currentAppId) && isset($envVars['META_APP_ID'])) {
+    $currentAppId = $envVars['META_APP_ID'];
+}
+if (empty($currentAppSecret) && isset($envVars['META_APP_SECRET'])) {
+    $currentAppSecret = $envVars['META_APP_SECRET'];
+}
 $currentMockMode  = MOCK_META_API;
 $redirectUri      = APP_URL . '/oauth_callback.php';
 
@@ -167,7 +173,7 @@ $csrfToken = generateCsrfToken();
                                             i
                                         </button>
                                     </label>
-                                    <input type="text" id="meta_app_id" name="meta_app_id" class="form-control shadow-sm font-monospace" placeholder="e.g. 2118891216178554" value="<?= e($currentAppId) ?>" autocomplete="off" required>
+                                    <input type="text" id="meta_app_id" name="meta_app_id" class="form-control shadow-sm font-monospace" placeholder="e.g. 123456789012345" value="<?= e($currentAppId) ?>" autocomplete="off" required>
                                 </div>
 
                                 <div class="mb-3">
