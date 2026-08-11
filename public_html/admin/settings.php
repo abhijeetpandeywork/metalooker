@@ -161,7 +161,7 @@ $csrfToken = generateCsrfToken();
                                             i
                                         </button>
                                     </label>
-                                    <input type="text" id="meta_app_id" name="meta_app_id" class="form-control shadow-sm font-monospace" placeholder="e.g. 123456789012345" value="<?= e($currentAppId) ?>" required>
+                                    <input type="text" id="meta_app_id" name="meta_app_id" class="form-control shadow-sm font-monospace" placeholder="e.g. 123456789012345" value="<?= e($currentAppId) ?>" autocomplete="off" required>
                                 </div>
 
                                 <div class="mb-3">
@@ -172,7 +172,7 @@ $csrfToken = generateCsrfToken();
                                         </button>
                                     </label>
                                     <div class="input-group shadow-sm">
-                                        <input type="password" id="meta_app_secret" name="meta_app_secret" class="form-control font-monospace" placeholder="••••••••••••••••••••••••••••••••" value="<?= e($currentAppSecret) ?>" required>
+                                        <input type="password" id="meta_app_secret" name="meta_app_secret" class="form-control font-monospace" placeholder="••••••••••••••••••••••••••••••••" value="<?= e($currentAppSecret) ?>" autocomplete="new-password" required>
                                         <button type="button" class="btn btn-outline-secondary" onclick="toggleSecretVisibility()">
                                             <i class="fa-solid fa-eye" id="secret-eye-icon"></i>
                                         </button>
