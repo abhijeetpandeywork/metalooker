@@ -24,7 +24,10 @@ if ($role === 'super_admin') {
     $clientCountStmt = $db->query("SELECT COUNT(*) as cnt FROM clients WHERE active = 1");
     $totalClients = (int)($clientCountStmt->fetch()['cnt'] ?? 0);
 
-    $spendStmt = $db->query("SELECT SUM(spend) as total_spend FROM ad_data_cache WHERE level = 'campaign'");
+    $thirtyDaysAgo = (new DateTime())->modify('-30 days')->format('Y-m-d');
+
+    $spendStmt = $db->prepare("SELECT SUM(spend) as total_spend FROM ad_data_cache WHERE level = 'campaign' AND date_start >= ?");
+    $spendStmt->execute([$thirtyDaysAgo]);
     $totalSpend = (float)($spendStmt->fetch()['total_spend'] ?? 0.0);
 } else {
     $clientCountStmt = $db->prepare("
@@ -36,13 +39,14 @@ if ($role === 'super_admin') {
     $clientCountStmt->execute([$userId]);
     $totalClients = (int)($clientCountStmt->fetch()['cnt'] ?? 0);
 
+    $thirtyDaysAgo = (new DateTime())->modify('-30 days')->format('Y-m-d');
     $spendStmt = $db->prepare("
         SELECT SUM(adc.spend) as total_spend
         FROM ad_data_cache adc
         JOIN team_client_access tca ON adc.client_id = tca.client_id
-        WHERE tca.user_id = ? AND adc.level = 'campaign'
+        WHERE tca.user_id = ? AND adc.level = 'campaign' AND adc.date_start >= ?
     ");
-    $spendStmt->execute([$userId]);
+    $spendStmt->execute([$userId, $thirtyDaysAgo]);
     $totalSpend = (float)($spendStmt->fetch()['total_spend'] ?? 0.0);
 }
 
@@ -177,8 +181,8 @@ $activeClients = $clientsStmt->fetchAll();
                         <div class="d-flex align-items-center justify-content-between">
                             <div>
                                 <span class="text-muted small fw-semibold text-uppercase font-heading">
-                                    Total Ad Spend Managed
-                                    <button type="button" class="info-popover-btn" data-bs-toggle="popover" title="Managed Spend" data-bs-content="Cumulative ad spend tracked across all connected client Meta accounts.">
+                                    Total Ad Spend Managed (30 Days)
+                                    <button type="button" class="info-popover-btn" data-bs-toggle="popover" title="Managed Spend" data-bs-content="Cumulative ad spend tracked across all connected client Meta accounts in the last 30 days.">
                                         i
                                     </button>
                                 </span>
