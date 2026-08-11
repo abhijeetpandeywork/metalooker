@@ -40,6 +40,7 @@ try {
     $stmt->execute([$clientId]);
     $client = $stmt->fetch();
     $stmt->closeCursor();
+    $stmt = null;
 
     if (!$client) {
         echo json_encode(['success' => false, 'error' => 'Client account not found.']);

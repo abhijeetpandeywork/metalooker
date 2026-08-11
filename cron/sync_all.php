@@ -64,6 +64,7 @@ function syncClientData(array $client): array {
         $checkStmt->execute([$clientId]);
         $hasData = ($checkStmt->fetch()['cnt'] ?? 0) > 0;
         $checkStmt->closeCursor();
+        $checkStmt = null;
 
         $dateStop = (new DateTime())->modify('-1 day')->format('Y-m-d');
         if ($hasData) {
