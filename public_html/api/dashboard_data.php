@@ -32,6 +32,36 @@ if (!isLoggedIn() && $clientId <= 0) {
     exit;
 }
 
+if ($clientId <= 0) {
+    echo json_encode(['error' => 'Client ID is required.']);
+    exit;
+}
+
+// Zero-Cron Setup Feature: If data is older than 6 hours, auto-sync automatically on page load
+try {
+    $lastSyncStmt = $db->prepare("SELECT last_sync, active FROM clients WHERE id = ? LIMIT 1");
+    $lastSyncStmt->execute([$clientId]);
+    $cRow = $lastSyncStmt->fetch();
+    $lastSyncTime = !empty($cRow['last_sync']) ? strtotime($cRow['last_sync']) : 0;
+    $isActive = (int)($cRow['active'] ?? 0) === 1;
+
+    if ($isActive && (time() - $lastSyncTime >= (6 * 3600))) {
+        $cronFile = __DIR__ . '/../cron/sync_all.php';
+        if (!file_exists($cronFile)) $cronFile = dirname(__DIR__) . '/../cron/sync_all.php';
+        if (file_exists($cronFile)) {
+            require_once $cronFile;
+            $cStmt = $db->prepare("SELECT * FROM clients WHERE id = ? LIMIT 1");
+            $cStmt->execute([$clientId]);
+            $cFull = $cStmt->fetch();
+            if ($cFull) {
+                syncClientData($cFull);
+            }
+        }
+    }
+} catch (Exception $eAutoSync) {
+    error_log("Auto-sync trigger error: " . $eAutoSync->getMessage());
+}
+
 // Authorization Checks
 if ($role === 'client') {
     if (!empty($_SESSION['client_id']) && $clientId !== (int)$_SESSION['client_id']) {
