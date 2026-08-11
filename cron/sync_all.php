@@ -147,12 +147,68 @@ function syncClientData(array $client): array {
                 $cpc            = (float)($row['cpc'] ?? 0.0);
                 $ctr            = (float)($row['ctr'] ?? 0.0);
                 $cpm            = (float)($row['cpm'] ?? 0.0);
-                $conversions    = (int)($row['conversions'] ?? 0);
-                $costPerResult  = (float)($row['cost_per_result'] ?? 0.0);
-                $roas           = (float)($row['roas'] ?? 0.0);
                 $frequency      = (float)($row['frequency'] ?? 1.0);
                 $rowStart       = $row['date_start'] ?? $dateStart;
                 $rowStop        = $row['date_stop'] ?? $dateStop;
+
+                // Robust Meta Actions & ROAS Extraction Engine
+                $conversions = 0;
+                if (isset($row['conversions']) && is_numeric($row['conversions'])) {
+                    $conversions = (int)$row['conversions'];
+                } elseif (isset($row['actions']) && is_array($row['actions'])) {
+                    $priorityActions = [
+                        'lead',
+                        'purchase',
+                        'omni_purchase',
+                        'onsite_conversion.messaging_conversation_started_7d',
+                        'contact',
+                        'complete_registration',
+                        'schedule',
+                        'submit_application',
+                        'subscribe',
+                        'landing_page_view'
+                    ];
+                    foreach ($row['actions'] as $act) {
+                        $type = $act['action_type'] ?? '';
+                        $val  = (int)($act['value'] ?? 0);
+                        if (in_array($type, $priorityActions, true)) {
+                            $conversions += $val;
+                        }
+                    }
+                    if ($conversions === 0) {
+                        foreach ($row['actions'] as $act) {
+                            $type = $act['action_type'] ?? '';
+                            if (str_contains($type, 'conversion') || str_contains($type, 'lead') || str_contains($type, 'purchase') || str_contains($type, 'messaging')) {
+                                $conversions += (int)($act['value'] ?? 0);
+                            }
+                        }
+                    }
+                }
+
+                $roas = 0.0;
+                if (isset($row['roas']) && is_numeric($row['roas'])) {
+                    $roas = (float)$row['roas'];
+                } elseif (isset($row['purchase_roas']) && is_array($row['purchase_roas'])) {
+                    foreach ($row['purchase_roas'] as $rItem) {
+                        if (!empty($rItem['value'])) {
+                            $roas = (float)$rItem['value'];
+                            break;
+                        }
+                    }
+                } elseif ($spend > 0 && isset($row['action_values']) && is_array($row['action_values'])) {
+                    $purchaseVal = 0.0;
+                    foreach ($row['action_values'] as $av) {
+                        $type = $av['action_type'] ?? '';
+                        if (in_array($type, ['purchase', 'omni_purchase', 'offsite_conversion.fb_pixel_purchase'], true)) {
+                            $purchaseVal += (float)($av['value'] ?? 0.0);
+                        }
+                    }
+                    if ($purchaseVal > 0) {
+                        $roas = round($purchaseVal / $spend, 2);
+                    }
+                }
+
+                $costPerResult = $conversions > 0 ? round($spend / $conversions, 2) : 0.0;
 
                 $upsertStmt->execute([
                     $clientId, $lvl, $objectId, $objectName, $rowStart, $rowStop,

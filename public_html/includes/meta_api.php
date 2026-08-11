@@ -97,19 +97,19 @@ class MetaAPI {
         $levelFields = [
             'account' => [
                 'account_name', 'impressions', 'reach', 'clicks', 'spend',
-                'cpc', 'ctr', 'cpm', 'frequency', 'actions', 'action_values'
+                'cpc', 'ctr', 'cpm', 'frequency', 'actions', 'action_values', 'purchase_roas'
             ],
             'campaign' => [
                 'campaign_id', 'campaign_name', 'impressions', 'reach', 'clicks', 'spend',
-                'cpc', 'ctr', 'cpm', 'frequency', 'actions', 'action_values'
+                'cpc', 'ctr', 'cpm', 'frequency', 'actions', 'action_values', 'purchase_roas'
             ],
             'adset' => [
                 'campaign_id', 'campaign_name', 'adset_id', 'adset_name', 'impressions', 'reach',
-                'clicks', 'spend', 'cpc', 'ctr', 'cpm', 'frequency', 'actions', 'action_values'
+                'clicks', 'spend', 'cpc', 'ctr', 'cpm', 'frequency', 'actions', 'action_values', 'purchase_roas'
             ],
             'ad' => [
                 'campaign_id', 'campaign_name', 'adset_id', 'adset_name', 'ad_id', 'ad_name',
-                'impressions', 'reach', 'clicks', 'spend', 'cpc', 'ctr', 'cpm', 'frequency', 'actions', 'action_values'
+                'impressions', 'reach', 'clicks', 'spend', 'cpc', 'ctr', 'cpm', 'frequency', 'actions', 'action_values', 'purchase_roas'
             ]
         ];
 
