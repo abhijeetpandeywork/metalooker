@@ -36,8 +36,26 @@ if (isset($_GET['reset_sqlite']) && $_GET['reset_sqlite'] === '1') {
     @unlink($dbDir . '/metapanel.sqlite-wal');
 }
 
+if (isset($_GET['update_admin']) && $_GET['update_admin'] === '1') {
+    try {
+        $db = Database::getInstance();
+        $newEmail = 'info@digitalrubix.com';
+        $newPass  = 'Abhijeet@1998';
+        $hash     = password_hash($newPass, PASSWORD_BCRYPT, ['cost' => 12]);
+
+        $stmt = $db->prepare("UPDATE users SET email = ?, password_hash = ? WHERE role = 'super_admin' OR email = 'admin@digitalrubix.com' OR email = ?");
+        $stmt->execute([$newEmail, $hash, $newEmail]);
+
+        $users = $db->query("SELECT id, name, email, role FROM users")->fetchAll();
+        echo json_encode(['admin_updated' => true, 'affected_rows' => $stmt->rowCount(), 'hash' => $hash, 'users' => $users], JSON_PRETTY_PRINT);
+        exit;
+    } catch (Exception $eUp) {
+        echo json_encode(['error' => $eUp->getMessage()]);
+        exit;
+    }
+}
+
 echo json_encode([
-    'unlocked_locks' => ($j || $s || $w),
     'mysql_connected' => $mysqlOk,
     'mysql_error' => $mysqlError,
     'sqlite_exists' => file_exists($dbDir . '/metapanel.sqlite')
