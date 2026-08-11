@@ -69,31 +69,46 @@ function syncClientData(array $client): array {
         $levels = ['account', 'campaign', 'adset', 'ad'];
         $totalInserted = 0;
 
-        $upsertStmt = $db->prepare("
-            INSERT INTO ad_data_cache (
-                client_id, level, object_id, object_name, date_start, date_stop,
-                impressions, reach, clicks, spend, cpc, ctr, cpm, conversions,
-                cost_per_result, roas, frequency
-            ) VALUES (
-                ?, ?, ?, ?, ?, ?,
-                ?, ?, ?, ?, ?, ?, ?, ?,
-                ?, ?, ?
-            )
-            ON DUPLICATE KEY UPDATE
-                object_name = VALUES(object_name),
-                impressions = VALUES(impressions),
-                reach = VALUES(reach),
-                clicks = VALUES(clicks),
-                spend = VALUES(spend),
-                cpc = VALUES(cpc),
-                ctr = VALUES(ctr),
-                cpm = VALUES(cpm),
-                conversions = VALUES(conversions),
-                cost_per_result = VALUES(cost_per_result),
-                roas = VALUES(roas),
-                frequency = VALUES(frequency),
-                synced_at = NOW()
-        ");
+        $driver = $db->getAttribute(PDO::ATTR_DRIVER_NAME);
+        if ($driver === 'sqlite') {
+            $upsertStmt = $db->prepare("
+                INSERT OR REPLACE INTO ad_data_cache (
+                    client_id, level, object_id, object_name, date_start, date_stop,
+                    impressions, reach, clicks, spend, cpc, ctr, cpm, conversions,
+                    cost_per_result, roas, frequency
+                ) VALUES (
+                    ?, ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?, ?, ?, ?,
+                    ?, ?, ?
+                )
+            ");
+        } else {
+            $upsertStmt = $db->prepare("
+                INSERT INTO ad_data_cache (
+                    client_id, level, object_id, object_name, date_start, date_stop,
+                    impressions, reach, clicks, spend, cpc, ctr, cpm, conversions,
+                    cost_per_result, roas, frequency
+                ) VALUES (
+                    ?, ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?, ?, ?, ?,
+                    ?, ?, ?
+                )
+                ON DUPLICATE KEY UPDATE
+                    object_name = VALUES(object_name),
+                    impressions = VALUES(impressions),
+                    reach = VALUES(reach),
+                    clicks = VALUES(clicks),
+                    spend = VALUES(spend),
+                    cpc = VALUES(cpc),
+                    ctr = VALUES(ctr),
+                    cpm = VALUES(cpm),
+                    conversions = VALUES(conversions),
+                    cost_per_result = VALUES(cost_per_result),
+                    roas = VALUES(roas),
+                    frequency = VALUES(frequency),
+                    synced_at = NOW()
+            ");
+        }
 
         foreach ($levels as $lvl) {
             $insights = $metaApi->getInsights($lvl, $dateStart, $dateStop);
