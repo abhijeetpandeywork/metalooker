@@ -128,6 +128,10 @@ function syncClientData(array $client): array {
                 ");
             }
 
+            if (!$db->inTransaction()) {
+                $db->beginTransaction();
+            }
+
             foreach ($levels as $lvl) {
                 $insights = $allInsights[$lvl] ?? [];
 
@@ -237,6 +241,9 @@ function syncClientData(array $client): array {
                     $totalInserted++;
                 }
             }
+            if ($db->inTransaction()) {
+                $db->commit();
+            }
 
         // Record success log
         $logStmt = $db->prepare("INSERT INTO sync_logs (client_id, status, rows_inserted) VALUES (?, 'success', ?)");
@@ -250,6 +257,9 @@ function syncClientData(array $client): array {
         ];
 
     } catch (Exception $e) {
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
         $errorMsg = $e->getMessage();
         $logStmt = $db->prepare("INSERT INTO sync_logs (client_id, status, rows_inserted, error_message) VALUES (?, 'error', 0, ?)");
         $logStmt->execute([$clientId, substr($errorMsg, 0, 500)]);
