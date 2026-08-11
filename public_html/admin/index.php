@@ -58,7 +58,6 @@ if ($role === 'super_admin') {
     $spendByCurrency = $spendStmt->fetchAll();
 }
 
-$totalSpendInrEquiv = 0.0;
 $currencyBreakdowns = [];
 
 foreach ($spendByCurrency as $row) {
@@ -66,7 +65,6 @@ foreach ($spendByCurrency as $row) {
     $val  = (float)$row['cat_spend'];
     if ($val > 0) {
         $currencyBreakdowns[$curr] = $val;
-        $totalSpendInrEquiv += convertToInr($val, $curr);
     }
 }
 
@@ -202,22 +200,21 @@ $activeClients = $clientsStmt->fetchAll();
                             <div>
                                 <span class="text-muted small fw-semibold text-uppercase font-heading">
                                     Total Ad Spend Managed (30 Days)
-                                    <button type="button" class="info-popover-btn" data-bs-toggle="popover" title="Multi-Currency Spend" data-bs-content="Calculates cumulative ad spend across multi-currency client accounts converted to INR base rate for accurate agency financial reporting.">
+                                    <button type="button" class="info-popover-btn" data-bs-toggle="popover" title="Multi-Currency Spend" data-bs-content="Displays exact ad spend grouped by each client's native account currency. Spends are listed separately to maintain 100% financial precision without FX conversion rate distortion.">
                                         i
                                     </button>
                                 </span>
-                                <h2 class="fw-bold m-0 text-success mt-1 font-heading">
-                                    <?= formatCurrency($totalSpendInrEquiv, 'INR') ?> 
-                                    <span class="fs-6 text-muted font-normal" style="font-size: 13px; font-weight: 500;">(Normalized INR)</span>
-                                </h2>
                                 <?php if (!empty($currencyBreakdowns)): ?>
-                                    <div class="mt-2 d-flex flex-wrap gap-1">
+                                    <div class="mt-2 d-flex flex-wrap align-items-center gap-2">
                                         <?php foreach ($currencyBreakdowns as $cCode => $cVal): ?>
-                                            <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size: 11px;">
+                                            <div class="d-inline-flex align-items-center bg-success-subtle text-success px-2 py-1 rounded-2 border border-success-subtle fw-bold font-heading" style="font-size: 1.25rem;">
                                                 <?= formatCurrency($cVal, $cCode) ?>
-                                            </span>
+                                                <span class="ms-1 text-uppercase text-muted" style="font-size: 11px; font-weight: 600;">(<?= e($cCode) ?>)</span>
+                                            </div>
                                         <?php endforeach; ?>
                                     </div>
+                                <?php else: ?>
+                                    <h2 class="fw-bold m-0 text-success mt-1 font-heading">₹0.00</h2>
                                 <?php endif; ?>
                             </div>
                             <div class="p-3 bg-success bg-opacity-10 text-success rounded-3 align-self-start">
