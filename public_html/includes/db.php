@@ -68,8 +68,8 @@ class Database {
                 self::$instance = new PDO($sqliteDsn, null, null, $options);
                 self::$instance->exec("PRAGMA foreign_keys = ON;");
                 self::$instance->exec("PRAGMA busy_timeout = 30000;");
-                self::$instance->exec("PRAGMA journal_mode = WAL;");
-                self::$instance->exec("PRAGMA synchronous = NORMAL;");
+                self::$instance->exec("PRAGMA journal_mode = MEMORY;");
+                self::$instance->exec("PRAGMA synchronous = OFF;");
 
                 self::ensureSqliteSchema(self::$instance);
             }
