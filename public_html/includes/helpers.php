@@ -96,23 +96,33 @@ function getDateRangeBounds(string $preset): array {
 }
 
 /**
- * Updates a key-value pair in .env file directly on disk.
+ * Updates a key-value pair in .env files directly on disk.
  *
  * @param string $key Environment variable key
  * @param string $value Environment variable value
  * @return bool True if updated successfully
  */
 function updateEnvFile(string $key, string $value): bool {
-    $envPath = dirname(__DIR__, 2) . '/.env';
-    if (!file_exists($envPath)) {
-        return false;
+    $paths = [
+        dirname(__DIR__) . '/.env',
+        dirname(__DIR__, 2) . '/.env'
+    ];
+    $success = false;
+
+    foreach ($paths as $envPath) {
+        if (!file_exists($envPath)) {
+            @file_put_contents($envPath, "");
+        }
+        $content = file_get_contents($envPath);
+        $keyPattern = "/^" . preg_quote($key, '/') . "=.*$/m";
+        if (preg_match($keyPattern, $content)) {
+            $content = preg_replace($keyPattern, "{$key}={$value}", $content);
+        } else {
+            $content = rtrim($content) . "\n{$key}={$value}\n";
+        }
+        if (file_put_contents($envPath, $content) !== false) {
+            $success = true;
+        }
     }
-    $content = file_get_contents($envPath);
-    $keyPattern = "/^" . preg_quote($key, '/') . "=.*$/m";
-    if (preg_match($keyPattern, $content)) {
-        $content = preg_replace($keyPattern, "{$key}={$value}", $content);
-    } else {
-        $content = rtrim($content) . "\n{$key}={$value}\n";
-    }
-    return file_put_contents($envPath, $content) !== false;
+    return $success;
 }

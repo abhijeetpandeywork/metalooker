@@ -44,9 +44,21 @@ function loadEnv(string $path): array {
     return $env;
 }
 
-// Locate .env in project root
-$rootDir = dirname(__DIR__, 2);
-$envVars = loadEnv($rootDir . '/.env');
+// Locate .env in project root or public_html
+$possibleEnvPaths = [
+    dirname(__DIR__) . '/.env',
+    dirname(__DIR__, 2) . '/.env',
+    __DIR__ . '/../../.env'
+];
+$envVars = [];
+foreach ($possibleEnvPaths as $path) {
+    if (file_exists($path)) {
+        $envVars = loadEnv($path);
+        if (!empty($envVars)) {
+            break;
+        }
+    }
+}
 
 // Define database constants
 define('DB_HOST', $envVars['DB_HOST'] ?? '127.0.0.1');
