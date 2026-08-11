@@ -45,7 +45,12 @@ document.addEventListener('DOMContentLoaded', function() {
     currentFrom = defaultDates.start;
     currentTo = defaultDates.end;
 
-    // Initialize Flatpickr Date Picker (if element and library exist on page)
+    // Default Period B Comparison Range (Matching preceding duration)
+    let compareFrom = '';
+    let compareTo = '';
+    let isCompareActive = false;
+
+    // Initialize Primary Flatpickr Date Picker
     let fpInstance = null;
     const datePickerEl = document.getElementById('date-range-picker');
     if (datePickerEl && typeof flatpickr !== 'undefined') {
@@ -57,11 +62,45 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (selectedDates.length === 2) {
                     currentFrom = instance.formatDate(selectedDates[0], "Y-m-d");
                     currentTo = instance.formatDate(selectedDates[1], "Y-m-d");
-                    fetchDashboardData(clientId, currentFrom, currentTo);
+                    fetchDashboardData(clientId, currentFrom, currentTo, compareFrom, compareTo);
                 }
             }
         });
         fpInstance.setDate([currentFrom, currentTo]);
+    }
+
+    // Initialize Comparison Flatpickr Date Picker
+    let fpCompareInstance = null;
+    const comparePickerEl = document.getElementById('compare-range-picker');
+    if (comparePickerEl && typeof flatpickr !== 'undefined') {
+        fpCompareInstance = flatpickr(comparePickerEl, {
+            mode: "range",
+            dateFormat: "Y-m-d",
+            onClose: function(selectedDates, dateStr, instance) {
+                if (selectedDates.length === 2) {
+                    compareFrom = instance.formatDate(selectedDates[0], "Y-m-d");
+                    compareTo = instance.formatDate(selectedDates[1], "Y-m-d");
+                    fetchDashboardData(clientId, currentFrom, currentTo, compareFrom, compareTo);
+                }
+            }
+        });
+    }
+
+    // Compare Mode Toggle Handler
+    const compareToggleEl = document.getElementById('compare-mode-toggle');
+    const compareWrapperEl = document.getElementById('compare-picker-wrapper');
+    if (compareToggleEl) {
+        compareToggleEl.addEventListener('change', function() {
+            isCompareActive = this.checked;
+            if (isCompareActive) {
+                compareWrapperEl.classList.remove('d-none');
+                compareWrapperEl.classList.add('d-flex');
+            } else {
+                compareWrapperEl.classList.remove('d-flex');
+                compareWrapperEl.classList.add('d-none');
+            }
+            fetchDashboardData(clientId, currentFrom, currentTo, compareFrom, compareTo);
+        });
     }
 
     // Preset Date Buttons
@@ -81,11 +120,11 @@ document.addEventListener('DOMContentLoaded', function() {
             if (fpInstance) {
                 fpInstance.setDate([currentFrom, currentTo]);
             }
-            fetchDashboardData(clientId, currentFrom, currentTo);
+            fetchDashboardData(clientId, currentFrom, currentTo, compareFrom, compareTo);
         });
     });
 
-    fetchDashboardData(clientId, currentFrom, currentTo);
+    fetchDashboardData(clientId, currentFrom, currentTo, compareFrom, compareTo);
 
     /**
      * Theme Switcher Engine with LocalStorage Persistence
@@ -134,11 +173,16 @@ document.addEventListener('DOMContentLoaded', function() {
         }));
     }
 
+    let dailySeriesBCache = [];
+
     /**
      * Fetches analytics payload from backend API
      */
-    function fetchDashboardData(cId, from, to) {
-        const url = `${window.APP_URL}/api/dashboard_data.php?client_id=${cId}&from=${from}&to=${to}`;
+    function fetchDashboardData(cId, from, to, compFrom = '', compTo = '') {
+        let url = `${window.APP_URL}/api/dashboard_data.php?client_id=${cId}&from=${from}&to=${to}`;
+        if (compFrom && compTo) {
+            url += `&compare_from=${compFrom}&compare_to=${compTo}`;
+        }
 
         fetch(url)
             .then(response => response.json())
@@ -151,10 +195,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 adsetsData = data.adsets || [];
                 adsData = data.ads || [];
                 dailySeriesCache = data.chart_daily || [];
+                dailySeriesBCache = data.chart_daily_b || [];
 
                 currentActiveCurrency = data.client_currency || currency;
-                updateKpiCards(data.kpis, data.trends, currentActiveCurrency);
-                renderSpendLineChart(dailySeriesCache);
+                updateKpiCards(data.kpis, data.kpis_b, data.trends, currentActiveCurrency, isCompareActive);
+                renderSpendLineChart(dailySeriesCache, isCompareActive ? dailySeriesBCache : []);
                 renderImpClickBarChart(campaignsData);
 
                 const currentSearch = tableSearchInput ? tableSearchInput.value.toLowerCase().trim() : '';
@@ -180,30 +225,31 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     /**
-     * Updates KPI metric cards with period trends
+     * Updates KPI metric cards with period trends & Period B comparison
      */
-    function updateKpiCards(kpis, trends, curr) {
+    function updateKpiCards(kpis, kpisB, trends, curr, isComparing) {
         const sym = getCurrencySymbol(curr);
 
-        const renderTrend = (elId, val, label) => {
+        const renderTrend = (elId, val, label, valBFormatted = '') => {
             const el = document.getElementById(elId);
             if (!el) return;
+            let subText = isComparing && valBFormatted ? `<div class="small text-muted mt-1" style="font-size: 11px;">vs ${valBFormatted} (Period B)</div>` : '';
             if (val > 0) {
-                el.innerHTML = `<span class="badge bg-success-subtle text-success fw-bold p-1"><i class="fa-solid fa-arrow-trend-up me-1"></i>+${val}% vs prev</span>`;
+                el.innerHTML = `<span class="badge bg-success-subtle text-success fw-bold p-1"><i class="fa-solid fa-arrow-trend-up me-1"></i>+${val}% vs prev</span>` + subText;
             } else if (val < 0) {
-                el.innerHTML = `<span class="badge bg-danger-subtle text-danger fw-bold p-1"><i class="fa-solid fa-arrow-trend-down me-1"></i>${val}% vs prev</span>`;
+                el.innerHTML = `<span class="badge bg-danger-subtle text-danger fw-bold p-1"><i class="fa-solid fa-arrow-trend-down me-1"></i>${val}% vs prev</span>` + subText;
             } else {
-                el.innerText = label;
+                el.innerHTML = `<span>${label}</span>` + subText;
             }
         };
 
         if (document.getElementById('kpi-spend')) {
             document.getElementById('kpi-spend').innerText = sym + formatNum(kpis.spend, 2);
-            renderTrend('trend-spend', trends?.spend, 'Selected period total');
+            renderTrend('trend-spend', trends?.spend, 'Selected period total', kpisB ? sym + formatNum(kpisB.spend, 2) : '');
         }
         if (document.getElementById('kpi-impressions')) {
             document.getElementById('kpi-impressions').innerText = formatNum(kpis.impressions, 0);
-            renderTrend('trend-impressions', trends?.impressions, 'Total Ad Views Delivered');
+            renderTrend('trend-impressions', trends?.impressions, 'Total Ad Views Delivered', kpisB ? formatNum(kpisB.impressions, 0) : '');
         }
         if (document.getElementById('kpi-reach')) {
             document.getElementById('kpi-reach').innerText = formatNum(kpis.reach, 0);
@@ -216,69 +262,88 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         if (document.getElementById('kpi-ctr')) {
             document.getElementById('kpi-ctr').innerText = formatNum(kpis.ctr, 2) + '%';
-            renderTrend('trend-ctr', trends?.ctr, 'Link Click Efficiency');
+            renderTrend('trend-ctr', trends?.ctr, 'Link Click Efficiency', kpisB ? formatNum(kpisB.ctr, 2) + '%' : '');
         }
         if (document.getElementById('kpi-cpc')) {
             document.getElementById('kpi-cpc').innerText = sym + formatNum(kpis.cpc, 2);
-            renderTrend('trend-cpc', trends?.cpc, 'Average Link Click Cost');
+            renderTrend('trend-cpc', trends?.cpc, 'Average Link Click Cost', kpisB ? sym + formatNum(kpisB.cpc, 2) : '');
         }
         if (document.getElementById('kpi-cpm')) {
             document.getElementById('kpi-cpm').innerText = sym + formatNum(kpis.cpm, 2);
-            renderTrend('trend-cpm', trends?.cpm, 'Cost Per 1K Views');
+            renderTrend('trend-cpm', trends?.cpm, 'Cost Per 1K Views', kpisB ? sym + formatNum(kpisB.cpm, 2) : '');
         }
         if (document.getElementById('kpi-conversions')) {
             document.getElementById('kpi-conversions').innerText = formatNum(kpis.conversions, 0);
-            renderTrend('trend-conversions', trends?.conversions, 'Total Attributed Results');
+            renderTrend('trend-conversions', trends?.conversions, 'Total Attributed Results', kpisB ? formatNum(kpisB.conversions, 0) : '');
         }
         if (document.getElementById('kpi-cpr')) {
             document.getElementById('kpi-cpr').innerText = sym + formatNum(kpis.cost_per_result, 2);
-            renderTrend('trend-cpr', trends?.cost_per_result, 'Avg. Acquisition Cost');
+            renderTrend('trend-cpr', trends?.cost_per_result, 'Avg. Acquisition Cost', kpisB ? sym + formatNum(kpisB.cost_per_result, 2) : '');
         }
         if (document.getElementById('kpi-roas')) {
             document.getElementById('kpi-roas').innerText = formatNum(kpis.roas, 2) + 'x';
-            renderTrend('trend-roas', trends?.roas, 'Average Purchase ROAS');
+            renderTrend('trend-roas', trends?.roas, 'Average Purchase ROAS', kpisB ? formatNum(kpisB.roas, 2) + 'x' : '');
         }
     }
 
     /**
-     * Renders Spend Over Time Line Chart using Chart.js
+     * Renders Spend Over Time Line Chart using Chart.js with dual overlay support
      */
-    function renderSpendLineChart(dailySeries) {
+    function renderSpendLineChart(dailySeriesA, dailySeriesB = []) {
         const ctx = document.getElementById('spendLineChart');
         if (!ctx) return;
 
-        const labels = dailySeries.map(item => item.date);
-        const dataSpend = dailySeries.map(item => item.spend);
+        const labels = dailySeriesA.map(item => item.date);
+        const dataSpendA = dailySeriesA.map(item => item.spend);
+        const dataSpendB = dailySeriesB.map(item => item.spend);
 
         if (spendChartInstance) {
             spendChartInstance.destroy();
         }
 
         const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
-        const strokeColor = isDark ? '#38bdf8' : '#0284c7';
+        const strokeColorA = isDark ? '#38bdf8' : '#0284c7';
+        const strokeColorB = isDark ? '#f59e0b' : '#d97706';
         const gridColor = isDark ? 'rgba(56, 189, 248, 0.12)' : 'rgba(226, 232, 240, 0.8)';
+
+        const datasets = [{
+            label: 'Period A Ad Spend',
+            data: dataSpendA,
+            borderColor: strokeColorA,
+            backgroundColor: isDark ? 'rgba(56, 189, 248, 0.15)' : 'rgba(2, 132, 199, 0.12)',
+            fill: true,
+            tension: 0.35,
+            borderWidth: 3,
+            pointRadius: 4,
+            pointHoverRadius: 6
+        }];
+
+        if (dailySeriesB && dailySeriesB.length > 0) {
+            datasets.push({
+                label: 'Period B Ad Spend',
+                data: dataSpendB,
+                borderColor: strokeColorB,
+                backgroundColor: 'transparent',
+                borderDash: [6, 6],
+                fill: false,
+                tension: 0.35,
+                borderWidth: 2,
+                pointRadius: 3,
+                pointHoverRadius: 5
+            });
+        }
 
         spendChartInstance = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: labels,
-                datasets: [{
-                    label: 'Daily Ad Spend',
-                    data: dataSpend,
-                    borderColor: strokeColor,
-                    backgroundColor: isDark ? 'rgba(56, 189, 248, 0.15)' : 'rgba(2, 132, 199, 0.12)',
-                    fill: true,
-                    tension: 0.35,
-                    borderWidth: 3,
-                    pointRadius: 4,
-                    pointHoverRadius: 6
-                }]
+                datasets: datasets
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: { display: false }
+                    legend: { display: dailySeriesB.length > 0 }
                 },
                 scales: {
                     x: { grid: { display: false } },

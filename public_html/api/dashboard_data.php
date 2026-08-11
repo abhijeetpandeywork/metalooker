@@ -106,15 +106,20 @@ try {
     $costPerResult = $conversions > 0 ? round($spend / $conversions, 2) : 0.0;
     $frequency = $reach > 0 ? round($impressions / $reach, 2) : 1.0;
 
-    // 2. Preceding Comparison Period Range for Trend % Calculation
-    $startDate = new DateTime($from);
-    $endDate   = new DateTime($to);
-    $diffDays  = $startDate->diff($endDate)->days + 1;
+    // 2. Comparison Period Range (Period B)
+    $compareFrom = $_GET['compare_from'] ?? '';
+    $compareTo   = $_GET['compare_to'] ?? '';
 
-    $prevEndDate   = (clone $startDate)->modify('-1 day');
-    $prevStartDate = (clone $prevEndDate)->modify("-" . ($diffDays - 1) . " days");
-    $prevFrom = $prevStartDate->format('Y-m-d');
-    $prevTo   = $prevEndDate->format('Y-m-d');
+    if (empty($compareFrom) || empty($compareTo)) {
+        $startDate = new DateTime($from);
+        $endDate   = new DateTime($to);
+        $diffDays  = $startDate->diff($endDate)->days + 1;
+
+        $prevEndDate   = (clone $startDate)->modify('-1 day');
+        $prevStartDate = (clone $prevEndDate)->modify("-" . ($diffDays - 1) . " days");
+        $compareFrom = $prevStartDate->format('Y-m-d');
+        $compareTo   = $prevEndDate->format('Y-m-d');
+    }
 
     $prevStmt = $db->prepare("
         SELECT
@@ -122,12 +127,13 @@ try {
             SUM(reach) as reach,
             SUM(clicks) as clicks,
             SUM(spend) as spend,
-            SUM(conversions) as conversions
+            SUM(conversions) as conversions,
+            AVG(CASE WHEN roas > 0 THEN roas ELSE NULL END) as avg_roas
         FROM ad_data_cache
         WHERE client_id = ? AND level = 'campaign'
         AND date_start >= ? AND date_start <= ?
     ");
-    $prevStmt->execute([$clientId, $prevFrom, $prevTo]);
+    $prevStmt->execute([$clientId, $compareFrom, $compareTo]);
     $prevRaw = $prevStmt->fetch();
 
     $prevSpend       = (float)($prevRaw['spend'] ?? 0.0);
@@ -135,11 +141,13 @@ try {
     $prevReach       = (int)($prevRaw['reach'] ?? 0);
     $prevClicks      = (int)($prevRaw['clicks'] ?? 0);
     $prevConversions = (int)($prevRaw['conversions'] ?? 0);
+    $prevAvgRoas     = (float)($prevRaw['avg_roas'] ?? 0.0);
 
-    $prevCtr  = $prevImpressions > 0 ? ($prevClicks / $prevImpressions) * 100 : 0.0;
-    $prevCpc  = $prevClicks > 0 ? $prevSpend / $prevClicks : 0.0;
-    $prevCpm  = $prevImpressions > 0 ? ($prevSpend / $prevImpressions) * 1000 : 0.0;
-    $prevCpr  = $prevConversions > 0 ? $prevSpend / $prevConversions : 0.0;
+    $prevCtr  = $prevImpressions > 0 ? round(($prevClicks / $prevImpressions) * 100, 2) : 0.0;
+    $prevCpc  = $prevClicks > 0 ? round($prevSpend / $prevClicks, 2) : 0.0;
+    $prevCpm  = $prevImpressions > 0 ? round(($prevSpend / $prevImpressions) * 1000, 2) : 0.0;
+    $prevCpr  = $prevConversions > 0 ? round($prevSpend / $prevConversions, 2) : 0.0;
+    $prevFreq = $prevReach > 0 ? round($prevImpressions / $prevReach, 2) : 1.0;
 
     $calcTrend = function($curr, $prev) {
         if ($prev <= 0) return 0.0;
@@ -156,7 +164,21 @@ try {
         'cpc'             => $calcTrend($cpc, $prevCpc),
         'cpm'             => $calcTrend($cpm, $prevCpm),
         'cost_per_result' => $calcTrend($costPerResult, $prevCpr),
-        'roas'            => 0.0
+        'roas'            => $calcTrend($avgRoas, $prevAvgRoas)
+    ];
+
+    $kpisB = [
+        'spend'           => $prevSpend,
+        'impressions'     => $prevImpressions,
+        'reach'           => $prevReach,
+        'frequency'       => $prevFreq,
+        'clicks'          => $prevClicks,
+        'ctr'             => $prevCtr,
+        'cpc'             => $prevCpc,
+        'cpm'             => $prevCpm,
+        'conversions'     => $prevConversions,
+        'cost_per_result' => $prevCpr,
+        'roas'            => round($prevAvgRoas, 2)
     ];
 
     // 3. Daily Spend & Performance Series (Chart.js)
@@ -174,6 +196,22 @@ try {
     ");
     $seriesStmt->execute([$clientId, $from, $to]);
     $dailySeries = $seriesStmt->fetchAll();
+
+    // Daily Spend Series for Period B (Comparison Chart Overlay)
+    $seriesBStmt = $db->prepare("
+        SELECT
+            date_start as date,
+            SUM(spend) as spend,
+            SUM(impressions) as impressions,
+            SUM(clicks) as clicks
+        FROM ad_data_cache
+        WHERE client_id = ? AND level = 'campaign'
+        AND date_start >= ? AND date_start <= ?
+        GROUP BY date_start
+        ORDER BY date_start ASC
+    ");
+    $seriesBStmt->execute([$clientId, $compareFrom, $compareTo]);
+    $dailySeriesB = $seriesBStmt->fetchAll();
 
     // 4. Campaign Breakdown Table (Full 12 Metrics)
     $cmpStmt = $db->prepare("
@@ -284,6 +322,8 @@ try {
         'success'         => true,
         'date_from'       => $from,
         'date_to'         => $to,
+        'compare_from'    => $compareFrom,
+        'compare_to'      => $compareTo,
         'client_currency' => $client['currency'] ?? 'INR',
         'client_country'  => $client['country_name'] ?? 'India',
         'config'          => $config,
@@ -300,11 +340,13 @@ try {
             'cost_per_result' => $costPerResult,
             'roas'            => round($avgRoas, 2)
         ],
-        'trends'      => $trends,
-        'chart_daily' => $dailySeries,
-        'campaigns'   => $campaigns,
-        'adsets'      => $adsets,
-        'ads'         => $ads
+        'kpis_b'        => $kpisB,
+        'trends'        => $trends,
+        'chart_daily'   => $dailySeries,
+        'chart_daily_b' => $dailySeriesB,
+        'campaigns'     => $campaigns,
+        'adsets'        => $adsets,
+        'ads'           => $ads
     ]);
 
 } catch (Throwable $e) {

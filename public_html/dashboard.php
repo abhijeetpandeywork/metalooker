@@ -179,20 +179,37 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
         <input type="hidden" id="meta-client-id" value="<?= $clientId ?>">
         <input type="hidden" id="meta-currency" value="<?= e($currency) ?>">
 
-        <!-- Date Range Filter & Search Bar -->
+        <!-- Date Range Filter & Comparison Bar -->
         <div class="card glass-card p-3 mb-4 shadow-sm">
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
-                <div class="btn-group shadow-sm" role="group" aria-label="Date presets">
-                    <button type="button" class="btn btn-sm btn-outline-secondary btn-preset-date" data-preset="last_7">7 Days</button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary btn-preset-date" data-preset="last_14">14 Days</button>
-                    <button type="button" class="btn btn-sm btn-primary btn-preset-date active" data-preset="last_30">30 Days</button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary btn-preset-date" data-preset="this_month">This Month</button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary btn-preset-date" data-preset="last_month">Last Month</button>
+                <div class="d-flex align-items-center gap-3 flex-wrap">
+                    <div class="btn-group shadow-sm" role="group" aria-label="Date presets">
+                        <button type="button" class="btn btn-sm btn-outline-secondary btn-preset-date" data-preset="last_7">7 Days</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary btn-preset-date" data-preset="last_14">14 Days</button>
+                        <button type="button" class="btn btn-sm btn-primary btn-preset-date active" data-preset="last_30">30 Days</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary btn-preset-date" data-preset="this_month">This Month</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary btn-preset-date" data-preset="last_month">Last Month</button>
+                    </div>
+
+                    <!-- Compare Toggle Switch -->
+                    <div class="form-check form-switch ms-md-2 m-0 d-flex align-items-center gap-2">
+                        <input class="form-check-input" type="checkbox" role="switch" id="compare-mode-toggle">
+                        <label class="form-check-label text-muted small fw-semibold user-select-none mb-0" for="compare-mode-toggle">
+                            <i class="fa-solid fa-code-compare me-1 text-primary"></i> Compare Brackets
+                        </label>
+                    </div>
                 </div>
 
-                <div class="d-flex align-items-center gap-2 flex-grow-1 flex-md-grow-0" style="min-width: 260px;">
-                    <i class="fa-regular fa-calendar text-muted"></i>
-                    <input type="text" id="date-range-picker" class="form-control form-control-sm shadow-sm" placeholder="Select custom date range...">
+                <div class="d-flex align-items-center gap-2 flex-wrap flex-grow-1 flex-md-grow-0">
+                    <div class="d-flex align-items-center gap-2" style="min-width: 220px;">
+                        <span class="badge bg-primary-subtle text-primary border me-1 font-heading" title="Primary Bracket (Period A)">Period A</span>
+                        <input type="text" id="date-range-picker" class="form-control form-control-sm shadow-sm" placeholder="Primary Date Bracket...">
+                    </div>
+
+                    <div id="compare-picker-wrapper" class="d-none align-items-center gap-2" style="min-width: 220px;">
+                        <span class="badge bg-warning-subtle text-warning-emphasis border me-1 font-heading" title="Comparison Bracket (Period B)">Period B</span>
+                        <input type="text" id="compare-range-picker" class="form-control form-control-sm shadow-sm border-warning" placeholder="Compare Bracket B...">
+                    </div>
                 </div>
             </div>
         </div>
