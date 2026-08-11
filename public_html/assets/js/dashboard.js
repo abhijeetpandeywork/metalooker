@@ -40,6 +40,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Initial Load Dates
+    const defaultDates = calculatePresetDates('last_30');
+    currentFrom = defaultDates.start;
+    currentTo = defaultDates.end;
+
     // Initialize Flatpickr Date Picker (if element and library exist on page)
     let fpInstance = null;
     const datePickerEl = document.getElementById('date-range-picker');
@@ -47,10 +52,7 @@ document.addEventListener('DOMContentLoaded', function() {
         fpInstance = flatpickr(datePickerEl, {
             mode: "range",
             dateFormat: "Y-m-d",
-            defaultDate: [
-                new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10),
-                new Date(Date.now() - 86400000).toISOString().slice(0, 10)
-            ],
+            defaultDate: [currentFrom, currentTo],
             onClose: function(selectedDates, dateStr, instance) {
                 if (selectedDates.length === 2) {
                     currentFrom = instance.formatDate(selectedDates[0], "Y-m-d");
@@ -59,6 +61,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         });
+        fpInstance.setDate([currentFrom, currentTo]);
     }
 
     // Preset Date Buttons
@@ -82,10 +85,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Initial Load
-    const defaultDates = calculatePresetDates('last_30');
-    currentFrom = defaultDates.start;
-    currentTo = defaultDates.end;
     fetchDashboardData(clientId, currentFrom, currentTo);
 
     /**
@@ -379,6 +378,13 @@ document.addEventListener('DOMContentLoaded', function() {
         tbody.innerHTML = html;
     }
 
+    function formatDateYMD(dateObj) {
+        const year = dateObj.getFullYear();
+        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const day = String(dateObj.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
     function calculatePresetDates(preset) {
         const today = new Date();
         const yesterday = new Date(today);
@@ -402,8 +408,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         return {
-            start: start.toISOString().slice(0, 10),
-            end: end.toISOString().slice(0, 10)
+            start: formatDateYMD(start),
+            end: formatDateYMD(end)
         };
     }
 
