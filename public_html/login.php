@@ -120,7 +120,6 @@ $csrfToken = generateCsrfToken();
             </form>
 
             <div class="text-center mt-4 pt-2 border-top border-secondary border-opacity-25">
-                <small class="text-muted"><i class="fa-solid fa-phone me-1 text-success"></i> Support: +91 9871633838</small><br>
                 <small class="text-muted">&copy; <?= date('Y') ?> Digital Rubix. All rights reserved.</small>
             </div>
         </div>
