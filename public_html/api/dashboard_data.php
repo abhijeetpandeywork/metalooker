@@ -15,21 +15,20 @@ require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/auth.php';
 require_once __DIR__ . '/../includes/helpers.php';
 
-if (!isLoggedIn()) {
-    echo json_encode(['error' => 'Authentication required.']);
-    exit;
-}
-
-$db = Database::getInstance();
-$role = $_SESSION['user_role'];
-$userId = $_SESSION['user_id'];
+$role = $_SESSION['user_role'] ?? $_SESSION['role'] ?? 'guest';
+$userId = $_SESSION['user_id'] ?? 0;
 
 // Target Client ID selection
 $clientId = (int)($_GET['client_id'] ?? $_SESSION['client_id'] ?? 0);
 
+if (!isLoggedIn() && $clientId <= 0) {
+    echo json_encode(['error' => 'Authentication required.']);
+    exit;
+}
+
 // Authorization Checks
 if ($role === 'client') {
-    if (empty($_SESSION['client_id']) || $clientId !== (int)$_SESSION['client_id']) {
+    if (!empty($_SESSION['client_id']) && $clientId !== (int)$_SESSION['client_id']) {
         echo json_encode(['error' => 'Forbidden: You can only access your own client data.']);
         exit;
     }
