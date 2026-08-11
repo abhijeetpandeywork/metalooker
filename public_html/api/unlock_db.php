@@ -1,12 +1,21 @@
 <?php
 header('Content-Type: application/json');
-$dbDir = dirname(__DIR__, 2) . '/db';
-$j = @unlink($dbDir . '/metapanel.sqlite-journal');
-$s = @unlink($dbDir . '/metapanel.sqlite-shm');
-$w = @unlink($dbDir . '/metapanel.sqlite-wal');
+$dirs = [
+    dirname(__DIR__, 2) . '/db',
+    __DIR__ . '/../includes/storage'
+];
 
-@chmod($dbDir . '/metapanel.sqlite', 0777);
-@chmod($dbDir, 0777);
+foreach ($dirs as $dbDir) {
+    if (is_dir($dbDir)) {
+        @chmod($dbDir, 0777);
+        foreach (glob($dbDir . '/*') as $f) {
+            @chmod($f, 0777);
+            if (str_contains($f, '-journal') || str_contains($f, '-shm') || str_contains($f, '-wal')) {
+                @unlink($f);
+            }
+        }
+    }
+}
 
 require_once __DIR__ . '/../includes/config.php';
 $mysqlError = null;
