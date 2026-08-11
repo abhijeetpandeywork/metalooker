@@ -67,27 +67,6 @@ if (empty($from) || empty($to)) {
 }
 
 try {
-    // Auto-sync check: if client has no cached data yet, trigger initial sync on demand
-    $countCheck = $db->prepare("SELECT COUNT(*) as cnt FROM ad_data_cache WHERE client_id = ?");
-    $countCheck->execute([$clientId]);
-    if (($countCheck->fetch()['cnt'] ?? 0) === 0) {
-        $cStmt = $db->prepare("SELECT * FROM clients WHERE id = ? LIMIT 1");
-        $cStmt->execute([$clientId]);
-        $clientObj = $cStmt->fetch();
-        if ($clientObj) {
-            $cronFile = __DIR__ . '/../../cron/sync_all.php';
-            if (!file_exists($cronFile)) $cronFile = dirname(__DIR__) . '/../cron/sync_all.php';
-            if (!file_exists($cronFile)) $cronFile = __DIR__ . '/../cron/sync_all.php';
-            
-            if (file_exists($cronFile)) {
-                require_once $cronFile;
-                if (function_exists('syncClientData')) {
-                    @syncClientData($clientObj);
-                }
-            }
-        }
-    }
-
     // 1. Aggregated Key Performance Indicators (Account / Campaign Level)
     $kpiStmt = $db->prepare("
         SELECT
@@ -98,9 +77,8 @@ try {
             SUM(conversions) as conversions
         FROM ad_data_cache
         WHERE client_id = ? AND level IN ('account', 'campaign')
-        AND date_start <= ? AND date_stop >= ?
     ");
-    $kpiStmt->execute([$clientId, $to, $from]);
+    $kpiStmt->execute([$clientId]);
     $kpisRaw = $kpiStmt->fetch();
 
     $impressions = (int)($kpisRaw['impressions'] ?? 0);
@@ -118,10 +96,9 @@ try {
     $roasStmt = $db->prepare("
         SELECT AVG(roas) as avg_roas
         FROM ad_data_cache
-        WHERE client_id = ? AND level IN ('account', 'campaign')
-        AND date_start <= ? AND date_stop >= ? AND roas > 0
+        WHERE client_id = ? AND level IN ('account', 'campaign') AND roas > 0
     ");
-    $roasStmt->execute([$clientId, $to, $from]);
+    $roasStmt->execute([$clientId]);
     $avgRoas = (float)($roasStmt->fetch()['avg_roas'] ?? 0.0);
 
     // 2. Daily Spend & Performance Series (Chart.js)
@@ -133,11 +110,10 @@ try {
             SUM(clicks) as clicks
         FROM ad_data_cache
         WHERE client_id = ? AND level IN ('account', 'campaign')
-        AND date_start <= ? AND date_stop >= ?
         GROUP BY date_start
         ORDER BY date_start ASC
     ");
-    $seriesStmt->execute([$clientId, $to, $from]);
+    $seriesStmt->execute([$clientId]);
     $dailySeries = $seriesStmt->fetchAll();
 
     // 3. Campaign Breakdown Table
@@ -152,11 +128,10 @@ try {
             AVG(roas) as roas
         FROM ad_data_cache
         WHERE client_id = ? AND level = 'campaign'
-        AND date_start <= ? AND date_stop >= ?
         GROUP BY object_id, object_name
         ORDER BY spend DESC
     ");
-    $cmpStmt->execute([$clientId, $to, $from]);
+    $cmpStmt->execute([$clientId]);
     $campaigns = array_map(function($row) {
         $imp = (int)$row['impressions'];
         $clk = (int)$row['clicks'];
@@ -180,11 +155,10 @@ try {
             AVG(roas) as roas
         FROM ad_data_cache
         WHERE client_id = ? AND level = 'adset'
-        AND date_start <= ? AND date_stop >= ?
         GROUP BY object_id, object_name
         ORDER BY spend DESC
     ");
-    $adsetStmt->execute([$clientId, $to, $from]);
+    $adsetStmt->execute([$clientId]);
     $adsets = array_map(function($row) {
         $imp = (int)$row['impressions'];
         $clk = (int)$row['clicks'];
@@ -207,11 +181,10 @@ try {
             AVG(roas) as roas
         FROM ad_data_cache
         WHERE client_id = ? AND level = 'ad'
-        AND date_start <= ? AND date_stop >= ?
         GROUP BY object_id, object_name
         ORDER BY spend DESC
     ");
-    $adStmt->execute([$clientId, $to, $from]);
+    $adStmt->execute([$clientId]);
     $ads = array_map(function($row) {
         $imp = (int)$row['impressions'];
         $clk = (int)$row['clicks'];
@@ -245,6 +218,6 @@ try {
         'ads'         => $ads
     ]);
 
-} catch (Exception $e) {
+} catch (Throwable $e) {
     echo json_encode(['error' => 'Failed to fetch analytics data: ' . $e->getMessage()]);
 }
