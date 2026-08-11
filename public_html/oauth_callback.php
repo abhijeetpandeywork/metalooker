@@ -51,6 +51,10 @@ if (empty($code)) {
 
 try {
     $redirectUri = APP_URL . '/oauth_callback.php';
+    $adAccountId = '';
+    $metaCurr    = 'INR';
+    $metaCCode   = 'IN';
+    $metaCName   = 'India';
 
     // In Mock Mode, generate token immediately
     if (MOCK_META_API) {
@@ -70,14 +74,21 @@ try {
         curl_setopt_array($ch, [
             CURLOPT_URL            => $tokenUrl,
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT        => 15
+            CURLOPT_TIMEOUT        => 15,
+            CURLOPT_SSL_VERIFYPEER => true
         ]);
         $response = curl_exec($ch);
+        $curlErr  = curl_error($ch);
         curl_close($ch);
+
+        if ($response === false) {
+            throw new Exception("cURL network error connecting to Meta Graph API: " . $curlErr);
+        }
 
         $tokenData = json_decode($response, true);
         if (empty($tokenData['access_token'])) {
-            throw new Exception("Failed to retrieve access token from Meta: " . ($tokenData['error']['message'] ?? 'Unknown error'));
+            $metaErr = $tokenData['error']['message'] ?? ($tokenData['error_description'] ?? 'Unknown OAuth error from Meta');
+            throw new Exception("Failed to retrieve access token from Meta: " . $metaErr);
         }
 
         $shortLivedToken = $tokenData['access_token'];
@@ -88,23 +99,23 @@ try {
         $expiresIn = $longTokenData['expires_in'] ?? (60 * 86400);
 
         // Fetch primary Ad Account ID & Auto-Detect Meta Settings
-        $metaApi = new MetaAPI($longLivedToken, $adAccountId);
-        if (empty($adAccountId)) {
-            $adAccounts = $metaApi->getAdAccounts();
-            $adAccountId = !empty($adAccounts[0]['id']) ? $adAccounts[0]['id'] : '';
-        }
+        $metaApi = new MetaAPI($longLivedToken);
+        $adAccounts = $metaApi->getAdAccounts();
+        $adAccountId = !empty($adAccounts[0]['id']) ? $adAccounts[0]['id'] : '';
 
-        $metaCurr  = 'INR';
-        $metaCCode = 'IN';
-        $metaCName = 'India';
-        try {
-            $metaMeta = $metaApi->getAccountMetadata();
-            if (!empty($metaMeta['currency'])) {
-                $metaCurr  = $metaMeta['currency'];
-                $metaCCode = $metaMeta['business_country_code'] ?? 'IN';
-                $metaCName = getCountryNameByCode($metaCCode);
+        if (!empty($adAccountId)) {
+            try {
+                $metaApiAccount = new MetaAPI($longLivedToken, $adAccountId);
+                $metaMeta = $metaApiAccount->getAccountMetadata();
+                if (!empty($metaMeta['currency'])) {
+                    $metaCurr  = $metaMeta['currency'];
+                    $metaCCode = $metaMeta['business_country_code'] ?? 'IN';
+                    $metaCName = getCountryNameByCode($metaCCode);
+                }
+            } catch (Exception $eMeta) {
+                error_log("Failed to fetch account metadata: " . $eMeta->getMessage());
             }
-        } catch (Exception $eMeta) {}
+        }
     }
 
     // Encrypt token using AES-256-CBC
