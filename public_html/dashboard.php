@@ -144,6 +144,14 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
                 </select>
             <?php endif; ?>
 
+            <!-- Real-Time Data Sync Button & Progress Badge -->
+            <button id="btn-realtime-sync" class="btn btn-sm btn-primary shadow-sm" data-client-id="<?= $clientId ?>">
+                <i class="fa-solid fa-arrows-rotate me-1"></i> Refresh Live Data
+            </button>
+            <span id="sync-status-badge" class="badge bg-light text-muted border px-2 py-1 align-self-center d-none">
+                <i class="fa-solid fa-spinner fa-spin me-1 text-primary"></i> <span id="sync-timer-text">Syncing Meta API... ~5s</span>
+            </span>
+
             <!-- Theme Mode Switcher -->
             <button type="button" class="btn btn-sm btn-outline-dark btn-theme-toggle shadow-sm">
                 <i class="fa-solid fa-moon me-1"></i> Dark Mode

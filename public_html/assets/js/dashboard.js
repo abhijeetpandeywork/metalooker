@@ -389,4 +389,58 @@ document.addEventListener('DOMContentLoaded', function() {
     function escapeHtml(str) {
         return (str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     }
+
+    // Instant Real-Time Data Sync Handler (No artificial delays)
+    const realtimeSyncBtn = document.getElementById('btn-realtime-sync');
+    const syncStatusBadge = document.getElementById('sync-status-badge');
+
+    if (realtimeSyncBtn) {
+        realtimeSyncBtn.addEventListener('click', function() {
+            const cId = this.getAttribute('data-client-id') || clientId;
+            const btn = this;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-arrows-rotate fa-spin me-1"></i> Syncing Live...';
+
+            if (syncStatusBadge) {
+                syncStatusBadge.classList.remove('d-none');
+                syncStatusBadge.className = 'badge bg-primary text-white px-2 py-1 align-self-center';
+                syncStatusBadge.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Syncing Meta API...';
+            }
+
+            fetch(`${window.APP_URL}/api/sync.php`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ client_id: cId })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    if (syncStatusBadge) {
+                        syncStatusBadge.className = 'badge bg-success text-white px-2 py-1 align-self-center';
+                        syncStatusBadge.innerHTML = `<i class="fa-solid fa-circle-check me-1"></i> Synced (${data.rows_inserted} rows)`;
+                    }
+                    // Immediately re-fetch and render dashboard metrics right away
+                    fetchDashboardData(cId, currentFrom, currentTo);
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-arrows-rotate me-1"></i> Refresh Live Data';
+                    setTimeout(() => {
+                        if (syncStatusBadge) syncStatusBadge.classList.add('d-none');
+                    }, 3000);
+                } else {
+                    if (syncStatusBadge) {
+                        syncStatusBadge.className = 'badge bg-danger text-white px-2 py-1 align-self-center';
+                        syncStatusBadge.innerHTML = `<i class="fa-solid fa-circle-xmark me-1"></i> Sync Error`;
+                    }
+                    alert('Sync Error: ' + (data.error || 'Failed to pull live Meta data'));
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-arrows-rotate me-1"></i> Refresh Live Data';
+                }
+            })
+            .catch(err => {
+                alert('Sync Network Error: ' + err);
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-arrows-rotate me-1"></i> Refresh Live Data';
+            });
+        });
+    }
 });
