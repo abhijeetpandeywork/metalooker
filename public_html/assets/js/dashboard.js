@@ -332,11 +332,11 @@ document.addEventListener('DOMContentLoaded', function() {
             let rowHtml = `<tr><td class="fw-semibold">${escapeHtml(r.name)}</td>`;
             if (cfg.show_impressions !== 0) rowHtml += `<td>${formatNum(r.impressions, 0)}</td>`;
             rowHtml += `<td>${formatNum(r.clicks, 0)}</td>`;
-            if (cfg.show_ctr !== 0) rowHtml += `<td><span class="badge-ctr">${formatNum(r.ctr, 2)}%</span></td>`;
+            if (cfg.show_ctr !== 0) rowHtml += `<td><span style="font-weight: 700; color: #0284c7; background-color: rgba(2,132,199,0.12); border: 1px solid rgba(2,132,199,0.3); padding: 3px 8px; border-radius: 6px; display: inline-block; font-size: 12px;">${formatNum(r.ctr, 2)}%</span></td>`;
             if (cfg.show_cpc !== 0) rowHtml += `<td>${sym}${formatNum(r.cpc, 2)}</td>`;
             if (cfg.show_spend !== 0) rowHtml += `<td class="fw-bold">${sym}${formatNum(r.spend, 2)}</td>`;
             if (cfg.show_leads !== 0) rowHtml += `<td>${formatNum(r.conversions, 0)}</td>`;
-            if (cfg.show_roas !== 0) rowHtml += `<td><span class="badge-roas">${formatNum(r.roas, 2)}x</span></td>`;
+            if (cfg.show_roas !== 0) rowHtml += `<td><span style="font-weight: 700; color: #059669; background-color: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.3); padding: 3px 8px; border-radius: 6px; display: inline-block; font-size: 12px;">${formatNum(r.roas, 2)}x</span></td>`;
             rowHtml += `</tr>`;
             html += rowHtml;
         });
