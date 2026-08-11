@@ -41,6 +41,7 @@ const filesToDeploy = [
     'public_html/api/test_meta_app.php',
     'public_html/api/test_live_meta.php',
     'public_html/api/run_bagnomy_sync.php',
+    'public_html/api/unlock_db.php',
     'public_html/api/dashboard_data.php',
     'public_html/api/export_csv.php',
     'public_html/api/export_pdf.php',
