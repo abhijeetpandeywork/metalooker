@@ -13,13 +13,21 @@
 set_time_limit(300);
 ini_set('memory_limit', '256M');
 
-// Absolute inclusion paths for CLI environment
-$rootDir = dirname(__DIR__);
-require_once $rootDir . '/public_html/includes/config.php';
-require_once $rootDir . '/public_html/includes/db.php';
-require_once $rootDir . '/public_html/includes/token_manager.php';
-require_once $rootDir . '/public_html/includes/meta_api.php';
-require_once $rootDir . '/public_html/includes/helpers.php';
+// Absolute inclusion paths for CLI/Cron environment
+$baseDir = dirname(__DIR__);
+if (file_exists($baseDir . '/includes/config.php')) {
+    require_once $baseDir . '/includes/config.php';
+    require_once $baseDir . '/includes/db.php';
+    require_once $baseDir . '/includes/token_manager.php';
+    require_once $baseDir . '/includes/meta_api.php';
+    require_once $baseDir . '/includes/helpers.php';
+} else {
+    require_once $baseDir . '/public_html/includes/config.php';
+    require_once $baseDir . '/public_html/includes/db.php';
+    require_once $baseDir . '/public_html/includes/token_manager.php';
+    require_once $baseDir . '/public_html/includes/meta_api.php';
+    require_once $baseDir . '/public_html/includes/helpers.php';
+}
 
 /**
  * Synchronizes ad account performance data for a single client.

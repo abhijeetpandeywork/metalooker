@@ -12,16 +12,15 @@ const conn = new Client();
 conn.on('ready', () => {
     console.log('✅ SSH Connected.');
 
-    // Check MySQL databases with user credentials
-    const cmd = "mysql -u u406313474 -p'Gaurav@20221' -e 'SHOW DATABASES;'";
+    const cmd = '/usr/bin/php /home/u406313474/domains/metalooker.digitalrubix.site/public_html/cron/sync_all.php';
     conn.exec(cmd, (err, stream) => {
         let out = '';
         stream.on('data', d => out += d.toString());
         stream.stderr.on('data', d => out += d.toString());
         stream.on('close', () => {
-            console.log('--- MySQL Databases ---');
+            console.log('--- PHP Cron Execution Test ---');
             console.log(out || '(No output)');
-            console.log('-----------------------');
+            console.log('-------------------------------');
             conn.end();
         });
     });
