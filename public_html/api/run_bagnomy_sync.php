@@ -8,7 +8,11 @@ header('Content-Type: application/json');
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/auth.php';
-require_once __DIR__ . '/../../cron/sync_all.php';
+if (file_exists(__DIR__ . '/../cron/sync_all.php')) {
+    require_once __DIR__ . '/../cron/sync_all.php';
+} else {
+    require_once __DIR__ . '/../../cron/sync_all.php';
+}
 
 $db = Database::getInstance();
 $stmt = $db->prepare("SELECT * FROM clients WHERE id = 2 LIMIT 1");
