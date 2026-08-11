@@ -38,7 +38,8 @@ class Database {
                 PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::ATTR_EMULATE_PREPARES   => false,
-                PDO::ATTR_TIMEOUT            => 30
+                PDO::ATTR_PERSISTENT         => false,
+                PDO::ATTR_TIMEOUT            => 60
             ];
 
             // 1. Try MySQL Connection
@@ -63,13 +64,13 @@ class Database {
                 if (file_exists($sqlitePath)) {
                     @chmod($sqlitePath, 0777);
                 }
-                $sqliteDsn = "sqlite:file:" . $sqlitePath . "?nolock=1";
+                $sqliteDsn = "sqlite:" . $sqlitePath;
 
                 self::$instance = new PDO($sqliteDsn, null, null, $options);
                 self::$instance->exec("PRAGMA foreign_keys = ON;");
-                self::$instance->exec("PRAGMA busy_timeout = 30000;");
-                self::$instance->exec("PRAGMA journal_mode = MEMORY;");
-                self::$instance->exec("PRAGMA synchronous = OFF;");
+                self::$instance->exec("PRAGMA busy_timeout = 60000;");
+                self::$instance->exec("PRAGMA journal_mode = WAL;");
+                self::$instance->exec("PRAGMA synchronous = NORMAL;");
 
                 self::ensureSqliteSchema(self::$instance);
             }
