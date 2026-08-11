@@ -13,8 +13,10 @@ header('Content-Type: application/json');
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/auth.php';
-$cronFile = file_exists(dirname(__DIR__, 2) . '/cron/sync_all.php') ? dirname(__DIR__, 2) . '/cron/sync_all.php' : __DIR__ . '/../cron/sync_all.php';
-require_once $cronFile;
+$cronFile = __DIR__ . '/../../cron/sync_all.php';
+if (!file_exists($cronFile)) $cronFile = dirname(__DIR__) . '/../cron/sync_all.php';
+if (!file_exists($cronFile)) $cronFile = __DIR__ . '/../cron/sync_all.php';
+if (file_exists($cronFile)) require_once $cronFile;
 
 if (!isLoggedIn() || !in_array($_SESSION['user_role'], ['super_admin', 'team_member'], true)) {
     echo json_encode(['success' => false, 'error' => 'Unauthorized access.']);
