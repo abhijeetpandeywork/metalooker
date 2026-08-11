@@ -65,8 +65,17 @@ All major milestones, feature additions, database migrations, and deployment eve
 
 ---
 
-## [Phase 8] — 2026-08-11: Sub-100ms Performance Optimization & Compare Two Date Brackets Engine
-- **Composite Database Indexing**: Created `idx_client_level_dates` (`client_id, level, date_start`) index on `ad_data_cache`, reducing query execution times from full-table scans to sub-10ms range scans.
-- **GZIP & HTTP Caching**: Enabled `ob_gzhandler` compression and `Cache-Control` max-age headers in `api/dashboard_data.php` and `.htaccess`.
-- **Compare Two Date Brackets Engine**: Built Period A vs Period B comparison engine across `dashboard.php`, `api/dashboard_data.php`, and `assets/js/dashboard.js`. Renders dual line chart overlays (Solid Period A vs Dashed Period B) and KPI baseline variance badges.
+## [Phase 9] — 2026-08-11: Uniform Design System, Transparent Vector Branding & Universal High-Contrast Badges
+- **Transparent Vector Logo**: Replaced old sidebar logo with a sleek SVG vector logo (`assets/logos/digital_rubix_logo.svg`) with glowing cyan `#` icon and transparent background.
+- **Universal High-Contrast Badges**: Updated `.badge-success-subtle`, `.badge-danger-subtle`, and `.badge-secondary-subtle` in `assets/css/style.css` for crystal-clear readability across Light and Dark themes.
+- **Single-Line Sidebar Navigation**: Enforced `width: 275px` and `white-space: nowrap !important` across all admin pages (`index.php`, `clients.php`, `client_edit.php`, `team.php`, `settings.php`, `sync_status.php`).
+- **50+ Yr Expert Responsive UX**: Standardized glass cards, form inputs, and mobile navigation drawers for mobile ($375\text{px}$+), tablet ($768\text{px}$+), and desktop viewports.
+
+---
+
+## [Phase 10] — 2026-08-12: Client Paused/Active Access Control, Rate-Limited Manual Sync & Indian Standard Time (IST)
+- **Client Active / Paused Access Control**: Configured `attemptLogin()` and `isLoggedIn()` in `includes/auth.php`. Toggling a client to **Paused** (`active = 0`) immediately blocks login attempts and kicks out active client sessions.
+- **Client Rate-Limited Manual Refresh**: Updated `api/sync.php` allowing `client` role users to trigger manual refreshes capped at a maximum of **5 manual syncs per day**, while Super Admins and Team Members maintain default unlimited access.
+- **System-Wide Indian Standard Time (IST / Asia/Kolkata)**: Enforced `date_default_timezone_set('Asia/Kolkata')` and PDO `SET time_zone = '+05:30'`, standardizing all backend logs, MySQL `NOW()` timestamps, and frontend consoles to IST.
+- **OAuth 2.0 Error Safeguard**: Resolved `$adAccountId` variable initialization in `oauth_callback.php`, eliminating HTTP 500 errors during Meta account authorization redirects.
 
