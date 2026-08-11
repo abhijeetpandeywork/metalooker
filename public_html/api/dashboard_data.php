@@ -47,7 +47,11 @@ if ($clientId <= 0) {
     exit;
 }
 
-// Fetch Client Dashboard Config
+// Fetch Client Record & Dashboard Config
+$clientStmt = $db->prepare("SELECT * FROM clients WHERE id = ? LIMIT 1");
+$clientStmt->execute([$clientId]);
+$client = $clientStmt->fetch();
+
 $configStmt = $db->prepare("SELECT * FROM dashboard_config WHERE client_id = ? LIMIT 1");
 $configStmt->execute([$clientId]);
 $config = $configStmt->fetch() ?: [
