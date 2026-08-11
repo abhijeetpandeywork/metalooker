@@ -66,12 +66,16 @@ function syncClientData(array $client): array {
 
         $dateStop = (new DateTime())->modify('-1 day')->format('Y-m-d');
         if ($hasData) {
-            // Subsequent sync: overlap last 7 days for late conversions attribution
-            $dateStart = (new DateTime())->modify('-7 days')->format('Y-m-d');
+            // Subsequent sync: overlap last 30 days for full attribution accuracy
+            $dateStart = (new DateTime())->modify('-30 days')->format('Y-m-d');
         } else {
             // Initial sync: fetch last 90 days
             $dateStart = (new DateTime())->modify('-90 days')->format('Y-m-d');
         }
+
+        // Cleanly wipe existing cache records in date window to guarantee fresh overwrite
+        $cleanStmt = $db->prepare("DELETE FROM ad_data_cache WHERE client_id = ? AND date_start >= ? AND date_start <= ?");
+        $cleanStmt->execute([$clientId, $dateStart, $dateStop]);
 
         $metaApi = new MetaAPI($plainToken, $adAccountId);
         $levels = ['account', 'campaign', 'adset', 'ad'];
