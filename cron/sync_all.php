@@ -214,11 +214,23 @@ function syncClientData(array $client): array {
 
                     $costPerResult = $conversions > 0 ? round($spend / $conversions, 2) : 0.0;
 
-                    $upsertStmt->execute([
-                        $clientId, $lvl, $objectId, $objectName, $rowStart, $rowStop,
-                        $impressions, $reach, $clicks, $spend, $cpc, $ctr, $cpm, $conversions,
-                        $costPerResult, $roas, $frequency
-                    ]);
+                    for ($attempt = 1; $attempt <= 5; $attempt++) {
+                        try {
+                            $upsertStmt->execute([
+                                $clientId, $lvl, $objectId, $objectName, $rowStart, $rowStop,
+                                $impressions, $reach, $clicks, $spend, $cpc, $ctr, $cpm, $conversions,
+                                $costPerResult, $roas, $frequency
+                            ]);
+                            $upsertStmt->closeCursor();
+                            break;
+                        } catch (Exception $ex) {
+                            if (str_contains($ex->getMessage(), 'locked') && $attempt < 5) {
+                                usleep(100000);
+                                continue;
+                            }
+                            throw $ex;
+                        }
+                    }
 
                     $totalInserted++;
                 }
