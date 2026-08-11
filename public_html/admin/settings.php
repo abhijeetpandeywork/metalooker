@@ -45,8 +45,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$currentAppId     = META_APP_ID;
-$currentAppSecret = META_APP_SECRET;
+$currentAppId     = META_APP_ID ?: getSystemSetting('meta_app_id', '');
+$currentAppSecret = META_APP_SECRET ?: getSystemSetting('meta_app_secret', '');
 $currentMockMode  = MOCK_META_API;
 $redirectUri      = APP_URL . '/oauth_callback.php';
 
