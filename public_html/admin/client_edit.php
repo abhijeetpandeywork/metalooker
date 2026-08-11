@@ -105,23 +105,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ");
                 $updateClient->execute([$businessName, $logoPath, $brandColor, $currency, $metaAdAccountId, $clientId]);
 
-                $upsertConfig = $db->prepare("
-                    INSERT INTO dashboard_config (
-                        client_id, default_range, show_spend, show_roas, show_leads,
-                        show_cpc, show_ctr, show_impressions, show_campaigns, show_adsets, report_title
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    ON DUPLICATE KEY UPDATE
-                        default_range = VALUES(default_range),
-                        show_spend = VALUES(show_spend),
-                        show_roas = VALUES(show_roas),
-                        show_leads = VALUES(show_leads),
-                        show_cpc = VALUES(show_cpc),
-                        show_ctr = VALUES(show_ctr),
-                        show_impressions = VALUES(show_impressions),
-                        show_campaigns = VALUES(show_campaigns),
-                        show_adsets = VALUES(show_adsets),
-                        report_title = VALUES(report_title)
-                ");
+                $driver = $db->getAttribute(PDO::ATTR_DRIVER_NAME);
+                if ($driver === 'sqlite') {
+                    $upsertConfig = $db->prepare("
+                        INSERT OR REPLACE INTO dashboard_config (
+                            client_id, default_range, show_spend, show_roas, show_leads,
+                            show_cpc, show_ctr, show_impressions, show_campaigns, show_adsets, report_title
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ");
+                } else {
+                    $upsertConfig = $db->prepare("
+                        INSERT INTO dashboard_config (
+                            client_id, default_range, show_spend, show_roas, show_leads,
+                            show_cpc, show_ctr, show_impressions, show_campaigns, show_adsets, report_title
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        ON DUPLICATE KEY UPDATE
+                            default_range = VALUES(default_range),
+                            show_spend = VALUES(show_spend),
+                            show_roas = VALUES(show_roas),
+                            show_leads = VALUES(show_leads),
+                            show_cpc = VALUES(show_cpc),
+                            show_ctr = VALUES(show_ctr),
+                            show_impressions = VALUES(show_impressions),
+                            show_campaigns = VALUES(show_campaigns),
+                            show_adsets = VALUES(show_adsets),
+                            report_title = VALUES(report_title)
+                    ");
+                }
                 $upsertConfig->execute([
                     $clientId, $defaultRange, $showSpend, $showRoas, $showLeads,
                     $showCpc, $showCtr, $showImpressions, $showCampaigns, $showAdsets, $reportTitle
