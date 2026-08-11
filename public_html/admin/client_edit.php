@@ -55,6 +55,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $defaultRange = $_POST['default_range'] ?? 'last_30';
         $metaAdAccountId = trim($_POST['meta_ad_account_id'] ?? '');
 
+        $targetLeadValue = (float)($_POST['target_lead_value'] ?? 500.00);
+
         // Widget Toggles
         $showSpend       = isset($_POST['show_spend']) ? 1 : 0;
         $showRoas        = isset($_POST['show_roas']) ? 1 : 0;
@@ -100,10 +102,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         logo_path = ?,
                         brand_color = ?,
                         currency = ?,
-                        meta_ad_account_id = ?
+                        meta_ad_account_id = ?,
+                        target_lead_value = ?
                     WHERE id = ?
                 ");
-                $updateClient->execute([$businessName, $logoPath, $brandColor, $currency, $metaAdAccountId, $clientId]);
+                $updateClient->execute([$businessName, $logoPath, $brandColor, $currency, $metaAdAccountId, $targetLeadValue, $clientId]);
 
                 $driver = $db->getAttribute(PDO::ATTR_DRIVER_NAME);
                 if ($driver === 'sqlite') {
@@ -372,6 +375,16 @@ $csrfToken = generateCsrfToken();
                                             <option value="SGD" <?= ($client['currency'] ?? '') === 'SGD' ? 'selected' : '' ?>>SGD ($)</option>
                                         </select>
                                     </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label text-muted small fw-semibold">
+                                        Target Lead / Deal Value (₹)
+                                        <button type="button" class="info-popover-btn" data-bs-toggle="popover" title="Target Lead Value" data-bs-content="Used to calculate ROAS for Lead Gen / WhatsApp campaigns without direct e-commerce pixel revenue: ROAS = (Leads * Target Value) / Ad Spend.">
+                                            i
+                                        </button>
+                                    </label>
+                                    <input type="number" step="0.01" min="0" name="target_lead_value" class="form-control shadow-sm" value="<?= e($client['target_lead_value'] ?? '500.00') ?>" required>
+                                    <small class="text-muted">Used for Lead Gen / WhatsApp ROAS calculations (Default: ₹500.00)</small>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label text-muted small fw-semibold">

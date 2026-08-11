@@ -32,6 +32,7 @@ try {
             meta_ad_account_id VARCHAR(60) DEFAULT NULL,
             meta_access_token TEXT DEFAULT NULL,
             token_expires_at DATETIME DEFAULT NULL,
+            target_lead_value DECIMAL(10,2) DEFAULT 500.00,
             active TINYINT(1) DEFAULT 1,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;",
@@ -108,6 +109,12 @@ try {
         } else {
             $logs[] = "Stmt #{$idx} ok";
         }
+    }
+
+    try {
+        $db->exec("ALTER TABLE clients ADD COLUMN target_lead_value DECIMAL(10,2) DEFAULT 500.00");
+    } catch (Exception $eCol) {
+        // Ignore if column exists
     }
 
     // Seed dashboard_config for all active clients

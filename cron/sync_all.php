@@ -195,7 +195,10 @@ function syncClientData(array $client): array {
                         }
                     }
 
+                    $targetLeadValue = (float)($client['target_lead_value'] ?? 500.00);
+
                     $roas = 0.0;
+                    // Tier 1: Direct Meta purchase_roas array
                     if (isset($row['roas']) && is_numeric($row['roas'])) {
                         $roas = (float)$row['roas'];
                     } elseif (isset($row['purchase_roas']) && is_array($row['purchase_roas'])) {
@@ -205,7 +208,10 @@ function syncClientData(array $client): array {
                                 break;
                             }
                         }
-                    } elseif ($spend > 0 && isset($row['action_values']) && is_array($row['action_values'])) {
+                    }
+
+                    // Tier 2: Check Meta action_values array for pixel purchase revenue
+                    if ($roas == 0.0 && $spend > 0 && isset($row['action_values']) && is_array($row['action_values'])) {
                         $purchaseVal = 0.0;
                         foreach ($row['action_values'] as $av) {
                             $type = $av['action_type'] ?? '';
@@ -216,6 +222,12 @@ function syncClientData(array $client): array {
                         if ($purchaseVal > 0) {
                             $roas = round($purchaseVal / $spend, 2);
                         }
+                    }
+
+                    // Tier 3: Lead Gen / WhatsApp / Call ROAS Engine (Conversions * Target Lead Value / Spend)
+                    if ($roas == 0.0 && $spend > 0 && $conversions > 0) {
+                        $estimatedRevenue = $conversions * $targetLeadValue;
+                        $roas = round($estimatedRevenue / $spend, 2);
                     }
 
                     $costPerResult = $conversions > 0 ? round($spend / $conversions, 2) : 0.0;
