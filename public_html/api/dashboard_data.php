@@ -68,7 +68,7 @@ if (empty($from) || empty($to)) {
 }
 
 try {
-    // 1. Aggregated Key Performance Indicators (Account / Campaign Level)
+    // 1. Aggregated Key Performance Indicators (Campaign Level ONLY to avoid double-counting with account level)
     $kpiStmt = $db->prepare("
         SELECT
             SUM(impressions) as impressions,
@@ -77,9 +77,10 @@ try {
             SUM(spend) as spend,
             SUM(conversions) as conversions
         FROM ad_data_cache
-        WHERE client_id = ? AND level IN ('account', 'campaign')
+        WHERE client_id = ? AND level = 'campaign'
+        AND date_start >= ? AND date_start <= ?
     ");
-    $kpiStmt->execute([$clientId]);
+    $kpiStmt->execute([$clientId, $from, $to]);
     $kpisRaw = $kpiStmt->fetch();
 
     $impressions = (int)($kpisRaw['impressions'] ?? 0);
@@ -97,9 +98,10 @@ try {
     $roasStmt = $db->prepare("
         SELECT AVG(roas) as avg_roas
         FROM ad_data_cache
-        WHERE client_id = ? AND level IN ('account', 'campaign') AND roas > 0
+        WHERE client_id = ? AND level = 'campaign'
+        AND date_start >= ? AND date_start <= ? AND roas > 0
     ");
-    $roasStmt->execute([$clientId]);
+    $roasStmt->execute([$clientId, $from, $to]);
     $avgRoas = (float)($roasStmt->fetch()['avg_roas'] ?? 0.0);
 
     // 2. Daily Spend & Performance Series (Chart.js)
@@ -110,11 +112,12 @@ try {
             SUM(impressions) as impressions,
             SUM(clicks) as clicks
         FROM ad_data_cache
-        WHERE client_id = ? AND level IN ('account', 'campaign')
+        WHERE client_id = ? AND level = 'campaign'
+        AND date_start >= ? AND date_start <= ?
         GROUP BY date_start
         ORDER BY date_start ASC
     ");
-    $seriesStmt->execute([$clientId]);
+    $seriesStmt->execute([$clientId, $from, $to]);
     $dailySeries = $seriesStmt->fetchAll();
 
     // 3. Campaign Breakdown Table
@@ -129,10 +132,11 @@ try {
             AVG(roas) as roas
         FROM ad_data_cache
         WHERE client_id = ? AND level = 'campaign'
+        AND date_start >= ? AND date_start <= ?
         GROUP BY object_id, object_name
         ORDER BY spend DESC
     ");
-    $cmpStmt->execute([$clientId]);
+    $cmpStmt->execute([$clientId, $from, $to]);
     $campaigns = array_map(function($row) {
         $imp = (int)$row['impressions'];
         $clk = (int)$row['clicks'];
@@ -156,10 +160,11 @@ try {
             AVG(roas) as roas
         FROM ad_data_cache
         WHERE client_id = ? AND level = 'adset'
+        AND date_start >= ? AND date_start <= ?
         GROUP BY object_id, object_name
         ORDER BY spend DESC
     ");
-    $adsetStmt->execute([$clientId]);
+    $adsetStmt->execute([$clientId, $from, $to]);
     $adsets = array_map(function($row) {
         $imp = (int)$row['impressions'];
         $clk = (int)$row['clicks'];
@@ -182,10 +187,11 @@ try {
             AVG(roas) as roas
         FROM ad_data_cache
         WHERE client_id = ? AND level = 'ad'
+        AND date_start >= ? AND date_start <= ?
         GROUP BY object_id, object_name
         ORDER BY spend DESC
     ");
-    $adStmt->execute([$clientId]);
+    $adStmt->execute([$clientId, $from, $to]);
     $ads = array_map(function($row) {
         $imp = (int)$row['impressions'];
         $clk = (int)$row['clicks'];
