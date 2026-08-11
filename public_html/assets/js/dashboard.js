@@ -39,22 +39,25 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Initialize Flatpickr Date Picker
-    const fp = flatpickr("#date-range-picker", {
-        mode: "range",
-        dateFormat: "Y-m-d",
-        defaultDate: [
-            new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10),
-            new Date(Date.now() - 86400000).toISOString().slice(0, 10)
-        ],
-        onClose: function(selectedDates, dateStr, instance) {
-            if (selectedDates.length === 2) {
-                currentFrom = instance.formatDate(selectedDates[0], "Y-m-d");
-                currentTo = instance.formatDate(selectedDates[1], "Y-m-d");
-                fetchDashboardData(clientId, currentFrom, currentTo);
+    // Initialize Flatpickr Date Picker (if element and library exist on page)
+    const datePickerEl = document.getElementById('date-range-picker');
+    if (datePickerEl && typeof flatpickr !== 'undefined') {
+        const fp = flatpickr(datePickerEl, {
+            mode: "range",
+            dateFormat: "Y-m-d",
+            defaultDate: [
+                new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10),
+                new Date(Date.now() - 86400000).toISOString().slice(0, 10)
+            ],
+            onClose: function(selectedDates, dateStr, instance) {
+                if (selectedDates.length === 2) {
+                    currentFrom = instance.formatDate(selectedDates[0], "Y-m-d");
+                    currentTo = instance.formatDate(selectedDates[1], "Y-m-d");
+                    fetchDashboardData(clientId, currentFrom, currentTo);
+                }
             }
-        }
-    });
+        });
+    }
 
     // Preset Date Buttons
     document.querySelectorAll('.btn-preset-date').forEach(button => {

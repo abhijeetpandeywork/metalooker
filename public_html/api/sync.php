@@ -21,7 +21,7 @@ if (!isLoggedIn() || !in_array($_SESSION['user_role'], ['super_admin', 'team_mem
 }
 
 $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
-$clientId = (int)($input['client_id'] ?? 0);
+$clientId = (int)($input['client_id'] ?? $_GET['client_id'] ?? 0);
 
 if ($clientId <= 0) {
     echo json_encode(['success' => false, 'error' => 'Invalid or missing client_id parameter.']);
