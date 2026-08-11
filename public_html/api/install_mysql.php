@@ -122,12 +122,8 @@ try {
     } catch (Exception $eCol2) {}
 
     try {
-        $db->exec("CREATE INDEX idx_client_level_dates ON ad_data_cache (client_id, level, date_start, date_stop)");
+        $db->exec("CREATE INDEX idx_client_level_dates ON ad_data_cache (client_id, level, date_start)");
     } catch (Exception $eIdx1) {}
-
-    try {
-        $db->exec("CREATE INDEX idx_client_dates ON ad_data_cache (client_id, date_start)");
-    } catch (Exception $eIdx2) {}
 
     // Seed dashboard_config for all active clients
     $allClients = $db->query("SELECT id FROM clients")->fetchAll();
