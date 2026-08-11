@@ -410,11 +410,43 @@ h1, h2, h3, h4, h5, h6, .font-heading {
     margin-bottom: 14px;
 }
 
-/* Responsive adjustments */
+/* Responsive Mobile & Tablet Layout Adjustments */
 @media (max-width: 992px) {
+    .admin-wrapper {
+        flex-direction: column !important;
+    }
     .admin-sidebar {
-        width: 100%;
-        min-height: auto;
+        width: 100% !important;
+        min-width: 100% !important;
+        min-height: auto !important;
+        border-right: none !important;
+        border-bottom: 1px solid var(--border-subtle);
+    }
+    .admin-sidebar .nav {
+        flex-direction: row !important;
+        overflow-x: auto;
+        white-space: nowrap;
+        padding-bottom: 8px;
+    }
+    .admin-sidebar .nav-link {
+        padding: 8px 14px !important;
+        font-size: 13px !important;
+    }
+    .admin-content {
+        padding: 16px !important;
+    }
+}
+
+@media (max-width: 576px) {
+    .kpi-title {
+        font-size: 11px !important;
+    }
+    .kpi-value {
+        font-size: 1.35rem !important;
+    }
+    .table th, .table td {
+        font-size: 11px !important;
+        padding: 8px 8px !important;
     }
 }
 
