@@ -1,7 +1,7 @@
 /**
- * Digital Rubix MetaPanel — Interactive Frontend Engine
- * Theme Switching, Popover Information Tooltips, AJAX Data Handling,
- * Real-time Table Searching, and Visual Charting.
+ * Digital Rubix MetaPanel — Interactive Glassmorphism Frontend Engine
+ * Handles theme switching, universal popover tooltips, period-over-period trend indicators,
+ * live search query filtering, and sortable tables.
  */
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -11,6 +11,10 @@ document.addEventListener('DOMContentLoaded', function() {
     let campaignsData = [];
     let adsetsData = [];
     let adsData = [];
+    let dailySeriesCache = [];
+
+    let sortCol = 'spend';
+    let sortAsc = false;
 
     const clientIdInput = document.getElementById('meta-client-id');
     const currencyInput = document.getElementById('meta-currency');
@@ -26,7 +30,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize Popovers & Tooltips
     initInfoPopovers();
 
-    // Search Input Event Listener
+    // Live Search Filter Listener
     const tableSearchInput = document.getElementById('table-search-input');
     if (tableSearchInput) {
         tableSearchInput.addEventListener('input', function() {
@@ -78,7 +82,7 @@ document.addEventListener('DOMContentLoaded', function() {
     fetchDashboardData(clientId, currentFrom, currentTo);
 
     /**
-     * Initializes Theme (Light/Dark) from LocalStorage
+     * Theme Switcher Engine with LocalStorage Persistence
      */
     function initThemeEngine() {
         const savedTheme = localStorage.getItem('metapanel_theme') || 'light';
@@ -93,7 +97,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 localStorage.setItem('metapanel_theme', next);
                 updateThemeToggleBtn(next);
 
-                // Refresh charts if rendered
                 if (spendChartInstance && campaignsData.length) {
                     renderSpendLineChart(dailySeriesCache);
                     renderImpClickBarChart(campaignsData);
@@ -106,10 +109,10 @@ document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('.btn-theme-toggle').forEach(btn => {
             if (theme === 'dark') {
                 btn.innerHTML = '<i class="fa-solid fa-sun text-warning me-1"></i> Light Mode';
-                btn.className = 'btn btn-sm btn-outline-warning btn-theme-toggle';
+                btn.className = 'btn btn-sm btn-outline-warning btn-theme-toggle shadow-sm';
             } else {
                 btn.innerHTML = '<i class="fa-solid fa-moon me-1"></i> Dark Mode';
-                btn.className = 'btn btn-sm btn-outline-dark btn-theme-toggle';
+                btn.className = 'btn btn-sm btn-outline-dark btn-theme-toggle shadow-sm';
             }
         });
     }
@@ -124,8 +127,6 @@ document.addEventListener('DOMContentLoaded', function() {
             html: true
         }));
     }
-
-    let dailySeriesCache = [];
 
     /**
      * Fetches analytics payload from backend API
@@ -151,6 +152,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 const currentSearch = tableSearchInput ? tableSearchInput.value.toLowerCase().trim() : '';
                 filterAndRenderTables(currentSearch);
+                initInfoPopovers();
             })
             .catch(err => {
                 console.error('Failed to load dashboard data:', err);
@@ -171,7 +173,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     /**
-     * Updates KPI metric cards in UI
+     * Updates KPI metric cards with period trends
      */
     function updateKpiCards(kpis, curr) {
         const sym = getCurrencySymbol(curr);
@@ -217,18 +219,18 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
-        const strokeColor = isDark ? '#38bdf8' : '#3b82f6';
-        const gridColor = isDark ? '#273553' : '#e2e8f0';
+        const strokeColor = isDark ? '#38bdf8' : '#0284c7';
+        const gridColor = isDark ? 'rgba(56, 189, 248, 0.12)' : 'rgba(226, 232, 240, 0.8)';
 
         spendChartInstance = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: labels,
                 datasets: [{
-                    label: 'Daily Spend',
+                    label: 'Daily Ad Spend',
                     data: dataSpend,
                     borderColor: strokeColor,
-                    backgroundColor: isDark ? 'rgba(56, 189, 248, 0.15)' : 'rgba(59, 130, 246, 0.12)',
+                    backgroundColor: isDark ? 'rgba(56, 189, 248, 0.15)' : 'rgba(2, 132, 199, 0.12)',
                     fill: true,
                     tension: 0.35,
                     borderWidth: 3,
@@ -277,7 +279,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     {
                         label: 'Impressions',
                         data: impData,
-                        backgroundColor: '#3b82f6',
+                        backgroundColor: '#0284c7',
                         borderRadius: 6
                     },
                     {
@@ -310,7 +312,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!tbody) return;
 
         if (!rows || rows.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4"><i class="fa-regular fa-folder-open me-2 fs-5"></i> No metrics found matching search query or date range.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-4"><i class="fa-regular fa-folder-open me-2 fs-5"></i> No ad metrics found matching search query or date range.</td></tr>`;
             return;
         }
 
@@ -323,11 +325,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     <td class="fw-semibold">${escapeHtml(r.name)}</td>
                     <td>${formatNum(r.impressions, 0)}</td>
                     <td>${formatNum(r.clicks, 0)}</td>
-                    <td><span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25">${formatNum(r.ctr, 2)}%</span></td>
+                    <td><span class="badge bg-info bg-opacity-15 text-info border border-info border-opacity-25 fw-bold">${formatNum(r.ctr, 2)}%</span></td>
                     <td>${sym}${formatNum(r.cpc, 2)}</td>
                     <td class="fw-bold">${sym}${formatNum(r.spend, 2)}</td>
                     <td>${formatNum(r.conversions, 0)}</td>
-                    <td><span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">${formatNum(r.roas, 2)}x</span></td>
+                    <td><span class="badge bg-success bg-opacity-15 text-success border border-success border-opacity-25 fw-bold">${formatNum(r.roas, 2)}x</span></td>
                 </tr>
             `;
         });

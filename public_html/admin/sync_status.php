@@ -46,8 +46,15 @@ $csrfToken = generateCsrfToken();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cron Sync Console — MetaPanel Admin</title>
+    <!-- Prevent FOUT Theme Script -->
+    <script>
+        (function() {
+            var t = localStorage.getItem('metapanel_theme') || 'light';
+            document.documentElement.setAttribute('data-bs-theme', t);
+        })();
+    </script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/style.css">
 </head>
@@ -97,10 +104,10 @@ $csrfToken = generateCsrfToken();
         <div class="admin-content flex-grow-1 p-4">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
-                    <h3 class="fw-bold m-0">Meta API Data Sync Console</h3>
+                    <h3 class="fw-bold m-0 font-heading">Meta API Data Sync Console</h3>
                     <p class="text-muted m-0">Monitor 6-hour cron sync status and trigger manual client refreshes</p>
                 </div>
-                <button type="button" class="btn btn-sm btn-outline-dark btn-theme-toggle">
+                <button type="button" class="btn btn-sm btn-outline-dark btn-theme-toggle shadow-sm">
                     <i class="fa-solid fa-moon me-1"></i> Dark Mode
                 </button>
             </div>
@@ -108,7 +115,7 @@ $csrfToken = generateCsrfToken();
             <!-- Client Sync Triggers Grid -->
             <div class="card glass-card mb-4 shadow-sm">
                 <div class="card-header bg-transparent border-bottom">
-                    <h5 class="m-0"><i class="fa-solid fa-bolt text-warning me-2"></i> Quick Sync Console</h5>
+                    <h5 class="m-0 font-heading"><i class="fa-solid fa-bolt text-warning me-2"></i> Quick Sync Console</h5>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
@@ -127,7 +134,7 @@ $csrfToken = generateCsrfToken();
                                     <tr id="client-row-<?= $c['id'] ?>">
                                         <td class="fw-semibold"><?= e($c['business_name']) ?></td>
                                         <td><code><?= e($c['meta_ad_account_id'] ?: 'N/A') ?></code></td>
-                                        <td class="sync-time"><?= e($c['last_sync'] ? date('d M Y, h:i A', strtotime($c['last_sync'])) : 'Never') ?></td>
+                                        <td class="sync-time"><?= e($c['last_sync'] ? date('d M Y, hh:i A', strtotime($c['last_sync'])) : 'Never') ?></td>
                                         <td class="sync-status">
                                             <?php if ($c['last_status'] === 'success'): ?>
                                                 <span class="badge bg-success bg-opacity-15 text-success border border-success border-opacity-25">Success</span>
@@ -138,7 +145,7 @@ $csrfToken = generateCsrfToken();
                                             <?php endif; ?>
                                         </td>
                                         <td class="text-end">
-                                            <button class="btn btn-sm btn-outline-primary btn-sync-now" data-client-id="<?= $c['id'] ?>">
+                                            <button class="btn btn-sm btn-outline-primary btn-sync-now shadow-sm font-heading" data-client-id="<?= $c['id'] ?>">
                                                 <i class="fa-solid fa-rotate me-1"></i> Sync Now
                                             </button>
                                         </td>
@@ -153,7 +160,7 @@ $csrfToken = generateCsrfToken();
             <!-- Recent Execution History Table -->
             <div class="card glass-card shadow-sm">
                 <div class="card-header bg-transparent border-bottom">
-                    <h5 class="m-0"><i class="fa-solid fa-list-check text-info me-2"></i> Execution History (Last 30 Runs)</h5>
+                    <h5 class="m-0 font-heading"><i class="fa-solid fa-list-check text-info me-2"></i> Execution History (Last 30 Runs)</h5>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">

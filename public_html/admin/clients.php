@@ -99,8 +99,15 @@ $csrfToken = generateCsrfToken();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Client Directory — MetaPanel Admin</title>
+    <!-- Prevent FOUT Theme Script -->
+    <script>
+        (function() {
+            var t = localStorage.getItem('metapanel_theme') || 'light';
+            document.documentElement.setAttribute('data-bs-theme', t);
+        })();
+    </script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/style.css">
 </head>
@@ -150,14 +157,14 @@ $csrfToken = generateCsrfToken();
         <div class="admin-content flex-grow-1 p-4">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
-                    <h3 class="fw-bold m-0">Agency Client Directory</h3>
+                    <h3 class="fw-bold m-0 font-heading">Agency Client Directory</h3>
                     <p class="text-muted m-0">Manage multi-client credentials, Meta tokens, and dashboard settings</p>
                 </div>
                 <div class="d-flex align-items-center gap-2">
-                    <button type="button" class="btn btn-sm btn-outline-dark btn-theme-toggle me-2">
+                    <button type="button" class="btn btn-sm btn-outline-dark btn-theme-toggle me-2 shadow-sm">
                         <i class="fa-solid fa-moon me-1"></i> Dark Mode
                     </button>
-                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newClientModal">
+                    <button class="btn btn-primary shadow-sm font-heading" data-bs-toggle="modal" data-bs-target="#newClientModal">
                         <i class="fa-solid fa-plus me-1"></i> Add New Client
                     </button>
                 </div>
@@ -228,10 +235,10 @@ $csrfToken = generateCsrfToken();
                                                 <?php endif; ?>
                                             </td>
                                             <td class="text-end">
-                                                <a href="<?= APP_URL ?>/admin/clients.php?toggle_id=<?= $c['id'] ?>" class="btn btn-sm btn-outline-warning me-1" title="Toggle Active Status">
+                                                <a href="<?= APP_URL ?>/admin/clients.php?toggle_id=<?= $c['id'] ?>" class="btn btn-sm btn-outline-warning me-1 shadow-sm" title="Toggle Active Status">
                                                     <i class="fa-solid fa-power-off"></i>
                                                 </a>
-                                                <a href="<?= APP_URL ?>/admin/client_edit.php?id=<?= $c['id'] ?>" class="btn btn-sm btn-primary">
+                                                <a href="<?= APP_URL ?>/admin/client_edit.php?id=<?= $c['id'] ?>" class="btn btn-sm btn-primary shadow-sm font-heading">
                                                     <i class="fa-solid fa-pen-to-square me-1"></i> Edit & OAuth
                                                 </a>
                                             </td>
@@ -251,7 +258,7 @@ $csrfToken = generateCsrfToken();
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content glass-card">
                 <div class="modal-header border-bottom">
-                    <h5 class="modal-title"><i class="fa-solid fa-building-circle-check text-primary me-2"></i> Register New Client</h5>
+                    <h5 class="modal-title font-heading"><i class="fa-solid fa-building-circle-check text-primary me-2"></i> Register New Client</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <form method="POST">
@@ -261,20 +268,20 @@ $csrfToken = generateCsrfToken();
                     <div class="modal-body">
                         <div class="mb-3">
                             <label class="form-label text-muted small fw-semibold">Business Name *</label>
-                            <input type="text" name="business_name" class="form-control" placeholder="e.g. Sharma Jewellers" required>
+                            <input type="text" name="business_name" class="form-control shadow-sm" placeholder="e.g. Sharma Jewellers" required>
                         </div>
                         <div class="mb-3">
                             <label class="form-label text-muted small fw-semibold">Client Login Email *</label>
-                            <input type="email" name="email" class="form-control" placeholder="client@sharmajewellers.com" required>
+                            <input type="email" name="email" class="form-control shadow-sm" placeholder="client@sharmajewellers.com" required>
                         </div>
                         <div class="mb-3">
                             <label class="form-label text-muted small fw-semibold">Client Password *</label>
-                            <input type="password" name="password" class="form-control" placeholder="••••••••" required>
+                            <input type="password" name="password" class="form-control shadow-sm" placeholder="••••••••" required>
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label text-muted small fw-semibold">Reporting Currency</label>
-                                <select name="currency" class="form-select">
+                                <select name="currency" class="form-select shadow-sm">
                                     <option value="INR">INR (₹)</option>
                                     <option value="USD">USD ($)</option>
                                     <option value="AED">AED (AED)</option>
@@ -284,13 +291,13 @@ $csrfToken = generateCsrfToken();
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label text-muted small fw-semibold">Brand Color Accent</label>
-                                <input type="color" name="brand_color" class="form-control form-control-color w-100" value="#0F2D55">
+                                <input type="color" name="brand_color" class="form-control form-control-color w-100 shadow-sm" value="#0F2D55">
                             </div>
                         </div>
                     </div>
                     <div class="modal-footer border-top">
                         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk me-1"></i> Create Client Account</button>
+                        <button type="submit" class="btn btn-primary font-heading shadow-sm"><i class="fa-solid fa-floppy-disk me-1"></i> Create Client Account</button>
                     </div>
                 </form>
             </div>

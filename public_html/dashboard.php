@@ -96,10 +96,17 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= e($reportTitle) ?> — Digital Rubix</title>
+    <!-- Prevent FOUT Theme Script -->
+    <script>
+        (function() {
+            var t = localStorage.getItem('metapanel_theme') || 'light';
+            document.documentElement.setAttribute('data-bs-theme', t);
+        })();
+    </script>
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
     <!-- FontAwesome Icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <!-- Flatpickr Datepicker CSS -->
@@ -121,14 +128,14 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
                 <img src="<?= e($logoUrl) ?>" alt="Digital Rubix Logo" class="agency-logo-img">
             </a>
             <div class="border-start ps-3 ms-2 d-none d-sm-block">
-                <h5 class="m-0 fw-bold text-primary"><?= e($client['business_name']) ?></h5>
+                <h5 class="m-0 fw-bold text-primary font-heading"><?= e($client['business_name']) ?></h5>
                 <small class="text-muted"><i class="fa-solid fa-phone me-1 text-success"></i> Hotline: +91 9871633838 | <?= e($reportTitle) ?></small>
             </div>
         </div>
 
         <div class="d-flex align-items-center gap-2 flex-wrap">
             <?php if (!empty($allClients)): ?>
-                <select class="form-select form-select-sm me-2" onchange="location.href='<?= APP_URL ?>/dashboard.php?client_id=' + this.value" style="width: auto;">
+                <select class="form-select form-select-sm me-2 shadow-sm" onchange="location.href='<?= APP_URL ?>/dashboard.php?client_id=' + this.value" style="width: auto;">
                     <?php foreach ($allClients as $ac): ?>
                         <option value="<?= $ac['id'] ?>" <?= $ac['id'] === $clientId ? 'selected' : '' ?>>
                             Switch: <?= e($ac['business_name']) ?>
@@ -138,31 +145,31 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
             <?php endif; ?>
 
             <!-- Theme Mode Switcher -->
-            <button type="button" class="btn btn-sm btn-outline-dark btn-theme-toggle">
+            <button type="button" class="btn btn-sm btn-outline-dark btn-theme-toggle shadow-sm">
                 <i class="fa-solid fa-moon me-1"></i> Dark Mode
             </button>
 
             <!-- Onboarding & Connection Guide Modal Trigger -->
-            <button type="button" class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#metaGuideModal">
+            <button type="button" class="btn btn-sm btn-outline-info shadow-sm" data-bs-toggle="modal" data-bs-target="#metaGuideModal">
                 <i class="fa-solid fa-circle-question me-1"></i> Meta API Guide
             </button>
 
             <!-- Export Buttons -->
-            <button id="btn-export-csv" class="btn btn-sm btn-outline-success">
+            <button id="btn-export-csv" class="btn btn-sm btn-outline-success shadow-sm">
                 <i class="fa-solid fa-file-csv me-1"></i> CSV Export
             </button>
-            <button id="btn-export-pdf" class="btn btn-sm btn-outline-danger">
+            <button id="btn-export-pdf" class="btn btn-sm btn-outline-danger shadow-sm">
                 <i class="fa-solid fa-file-pdf me-1"></i> PDF Export
             </button>
 
             <!-- Admin Gateway Backlink -->
             <?php if ($userRole === 'super_admin' || $userRole === 'team_member'): ?>
-                <a href="<?= APP_URL ?>/admin/index.php" class="btn btn-sm btn-dark me-1">
+                <a href="<?= APP_URL ?>/admin/index.php" class="btn btn-sm btn-dark me-1 shadow-sm">
                     <i class="fa-solid fa-user-gear me-1"></i> Admin Console
                 </a>
             <?php endif; ?>
 
-            <a href="<?= APP_URL ?>/logout.php" class="btn btn-sm btn-outline-secondary" title="Sign Out">
+            <a href="<?= APP_URL ?>/logout.php" class="btn btn-sm btn-outline-secondary shadow-sm" title="Sign Out">
                 <i class="fa-solid fa-power-off"></i>
             </a>
         </div>
@@ -176,7 +183,7 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
         <!-- Date Range Filter & Search Bar -->
         <div class="card glass-card p-3 mb-4 shadow-sm">
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
-                <div class="btn-group" role="group" aria-label="Date presets">
+                <div class="btn-group shadow-sm" role="group" aria-label="Date presets">
                     <button type="button" class="btn btn-sm btn-outline-secondary btn-preset-date" data-preset="last_7">7 Days</button>
                     <button type="button" class="btn btn-sm btn-outline-secondary btn-preset-date" data-preset="last_14">14 Days</button>
                     <button type="button" class="btn btn-sm btn-primary btn-preset-date active" data-preset="last_30">30 Days</button>
@@ -186,7 +193,7 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
 
                 <div class="d-flex align-items-center gap-2 flex-grow-1 flex-md-grow-0" style="min-width: 260px;">
                     <i class="fa-regular fa-calendar text-muted"></i>
-                    <input type="text" id="date-range-picker" class="form-control form-control-sm" placeholder="Select custom date range...">
+                    <input type="text" id="date-range-picker" class="form-control form-control-sm shadow-sm" placeholder="Select custom date range...">
                 </div>
             </div>
         </div>
@@ -199,11 +206,13 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
                         <div class="d-flex justify-content-between align-items-center">
                             <span class="kpi-title">Total Ad Spend</span>
                             <button type="button" class="info-popover-btn" data-bs-toggle="popover" title="Total Ad Spend" data-bs-content="Sum of all financial expenditure across active campaigns within the selected date range.">
-                                <i class="fa-solid fa-circle-info"></i>
+                                i
                             </button>
                         </div>
                         <h3 class="kpi-value" id="kpi-spend">—</h3>
-                        <small class="text-muted">Calculated for selected period</small>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">Calculated for selected period</small>
+                        </div>
                     </div>
                 </div>
             <?php endif; ?>
@@ -214,11 +223,13 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
                         <div class="d-flex justify-content-between align-items-center">
                             <span class="kpi-title">Return on Ad Spend (ROAS)</span>
                             <button type="button" class="info-popover-btn" data-bs-toggle="popover" title="Purchase ROAS" data-bs-content="Formula: Total Conversion Revenue / Total Ad Spend. Values > 1.0x indicate profitable advertising return.">
-                                <i class="fa-solid fa-circle-info"></i>
+                                i
                             </button>
                         </div>
                         <h3 class="kpi-value text-success" id="kpi-roas">—</h3>
-                        <small class="text-muted">Average Purchase ROAS Multiple</small>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">Average Purchase ROAS Multiple</small>
+                        </div>
                     </div>
                 </div>
             <?php endif; ?>
@@ -229,11 +240,13 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
                         <div class="d-flex justify-content-between align-items-center">
                             <span class="kpi-title">Conversions / Leads</span>
                             <button type="button" class="info-popover-btn" data-bs-toggle="popover" title="Total Results" data-bs-content="Count of desired action outcomes (e.g. Lead Form submissions, Purchases, or Registrations).">
-                                <i class="fa-solid fa-circle-info"></i>
+                                i
                             </button>
                         </div>
                         <h3 class="kpi-value" id="kpi-conversions">—</h3>
-                        <small class="text-muted">Total Attributed Results</small>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">Total Attributed Results</small>
+                        </div>
                     </div>
                 </div>
             <?php endif; ?>
@@ -244,11 +257,13 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
                         <div class="d-flex justify-content-between align-items-center">
                             <span class="kpi-title">Click-Through Rate (CTR)</span>
                             <button type="button" class="info-popover-btn" data-bs-toggle="popover" title="CTR Percentage" data-bs-content="Formula: (Total Clicks / Total Impressions) * 100. Measures ad creative engagement effectiveness.">
-                                <i class="fa-solid fa-circle-info"></i>
+                                i
                             </button>
                         </div>
                         <h3 class="kpi-value" id="kpi-ctr">—</h3>
-                        <small class="text-muted">Avg. Engagement Efficiency</small>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">Avg. Engagement Efficiency</small>
+                        </div>
                     </div>
                 </div>
             <?php endif; ?>
@@ -259,11 +274,13 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
                         <div class="d-flex justify-content-between align-items-center">
                             <span class="kpi-title">Cost Per Click (CPC)</span>
                             <button type="button" class="info-popover-btn" data-bs-toggle="popover" title="Avg Cost Per Click" data-bs-content="Formula: Total Ad Spend / Total Clicks. Lower values indicate cost-efficient traffic.">
-                                <i class="fa-solid fa-circle-info"></i>
+                                i
                             </button>
                         </div>
                         <h3 class="kpi-value" id="kpi-cpc">—</h3>
-                        <small class="text-muted">Average Link Click Cost</small>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">Average Link Click Cost</small>
+                        </div>
                     </div>
                 </div>
             <?php endif; ?>
@@ -274,11 +291,13 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
                         <div class="d-flex justify-content-between align-items-center">
                             <span class="kpi-title">Total Impressions</span>
                             <button type="button" class="info-popover-btn" data-bs-toggle="popover" title="Impressions" data-bs-content="Total number of times your ads were rendered on screen across Meta platforms (Facebook & Instagram).">
-                                <i class="fa-solid fa-circle-info"></i>
+                                i
                             </button>
                         </div>
                         <h3 class="kpi-value" id="kpi-impressions">—</h3>
-                        <small class="text-muted">Total Ad Views Delivered</small>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">Total Ad Views Delivered</small>
+                        </div>
                     </div>
                 </div>
             <?php endif; ?>
@@ -290,7 +309,7 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
             <div class="col-lg-7">
                 <div class="glass-card p-4 h-100">
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="fw-bold m-0"><i class="fa-solid fa-chart-area me-2 text-primary"></i> Daily Ad Spend Trend</h5>
+                        <h5 class="fw-bold m-0 font-heading"><i class="fa-solid fa-chart-area me-2 text-primary"></i> Daily Ad Spend Trend</h5>
                     </div>
                     <div style="height: 300px; position: relative;">
                         <canvas id="spendLineChart"></canvas>
@@ -302,7 +321,7 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
             <div class="col-lg-5">
                 <div class="glass-card p-4 h-100">
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="fw-bold m-0"><i class="fa-solid fa-chart-bar me-2 text-success"></i> Campaign Performance</h5>
+                        <h5 class="fw-bold m-0 font-heading"><i class="fa-solid fa-chart-bar me-2 text-success"></i> Campaign Performance</h5>
                     </div>
                     <div style="height: 300px; position: relative;">
                         <canvas id="impClickBarChart"></canvas>
@@ -335,7 +354,7 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
                 </ul>
 
                 <!-- Realtime Table Search Box -->
-                <div class="input-group input-group-sm" style="max-width: 260px;">
+                <div class="input-group input-group-sm shadow-sm" style="max-width: 260px;">
                     <span class="input-group-text"><i class="fa-solid fa-magnifying-glass"></i></span>
                     <input type="text" id="table-search-input" class="form-control" placeholder="Search campaign or ad name...">
                 </div>
@@ -423,7 +442,7 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content glass-card">
                 <div class="modal-header border-bottom">
-                    <h5 class="modal-title"><i class="fa-brands fa-meta text-primary me-2"></i> Meta Marketing API Client Connection Guide</h5>
+                    <h5 class="modal-title font-heading"><i class="fa-brands fa-meta text-primary me-2"></i> Meta Marketing API Client Connection Guide</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-4">

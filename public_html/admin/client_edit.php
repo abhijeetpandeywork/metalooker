@@ -183,8 +183,15 @@ $csrfToken = generateCsrfToken();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Edit Client Settings — MetaPanel Admin</title>
+    <!-- Prevent FOUT Theme Script -->
+    <script>
+        (function() {
+            var t = localStorage.getItem('metapanel_theme') || 'light';
+            document.documentElement.setAttribute('data-bs-theme', t);
+        })();
+    </script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/style.css">
 </head>
@@ -234,14 +241,14 @@ $csrfToken = generateCsrfToken();
         <div class="admin-content flex-grow-1 p-4">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
-                    <h3 class="fw-bold m-0">Client Configuration: <?= e($client['business_name']) ?></h3>
+                    <h3 class="fw-bold m-0 font-heading">Client Configuration: <?= e($client['business_name']) ?></h3>
                     <p class="text-muted m-0">Custom branding, Meta Graph API onboarding, and widget visibility</p>
                 </div>
                 <div class="d-flex align-items-center gap-2">
-                    <button type="button" class="btn btn-sm btn-outline-dark btn-theme-toggle me-2">
+                    <button type="button" class="btn btn-sm btn-outline-dark btn-theme-toggle me-2 shadow-sm">
                         <i class="fa-solid fa-moon me-1"></i> Dark Mode
                     </button>
-                    <a href="<?= APP_URL ?>/admin/clients.php" class="btn btn-outline-secondary">
+                    <a href="<?= APP_URL ?>/admin/clients.php" class="btn btn-outline-secondary shadow-sm">
                         <i class="fa-solid fa-arrow-left me-1"></i> Back to Clients
                     </a>
                 </div>
@@ -264,7 +271,7 @@ $csrfToken = generateCsrfToken();
             <!-- Meta API Status Card -->
             <div class="card glass-card mb-4 shadow-sm">
                 <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center">
-                    <h5 class="m-0"><i class="fa-brands fa-meta me-2 text-primary"></i> Meta Marketing API Connection</h5>
+                    <h5 class="m-0 font-heading"><i class="fa-brands fa-meta me-2 text-primary"></i> Meta Marketing API Connection</h5>
                     <span class="badge bg-<?= $tokenHealth === 'green' ? 'success' : ($tokenHealth === 'yellow' ? 'warning' : 'danger') ?> fs-6">
                         <?= e($healthLabel) ?>
                     </span>
@@ -277,11 +284,11 @@ $csrfToken = generateCsrfToken();
                         </div>
                         <div class="col-md-4 text-md-end mt-3 mt-md-0">
                             <?php if (MOCK_META_API): ?>
-                                <a href="<?= APP_URL ?>/oauth_callback.php?state=<?= $oauthState ?>&code=mock_code" class="btn btn-primary">
+                                <a href="<?= APP_URL ?>/oauth_callback.php?state=<?= $oauthState ?>&code=mock_code" class="btn btn-primary shadow-sm font-heading">
                                     <i class="fa-brands fa-facebook me-1"></i> Connect Meta Account (Mock)
                                 </a>
                             <?php else: ?>
-                                <a href="<?= $oauthUrl ?>" class="btn btn-primary">
+                                <a href="<?= $oauthUrl ?>" class="btn btn-primary shadow-sm font-heading">
                                     <i class="fa-brands fa-facebook me-1"></i> Connect Meta Account
                                 </a>
                             <?php endif; ?>
@@ -299,40 +306,40 @@ $csrfToken = generateCsrfToken();
                     <div class="col-lg-6 mb-4">
                         <div class="card glass-card h-100 shadow-sm">
                             <div class="card-header bg-transparent border-bottom">
-                                <h5 class="m-0"><i class="fa-solid fa-palette me-2 text-info"></i> Branding & Portal Customization</h5>
+                                <h5 class="m-0 font-heading"><i class="fa-solid fa-palette me-2 text-info"></i> Branding & Portal Customization</h5>
                             </div>
                             <div class="card-body">
                                 <div class="mb-3">
                                     <label class="form-label text-muted small fw-semibold">
                                         Business Name
                                         <button type="button" class="info-popover-btn" data-bs-toggle="popover" title="Business Name" data-bs-content="Displayed at top of client dashboard report header.">
-                                            <i class="fa-solid fa-circle-info"></i>
+                                            i
                                         </button>
                                     </label>
-                                    <input type="text" name="business_name" class="form-control" value="<?= e($client['business_name']) ?>" required>
+                                    <input type="text" name="business_name" class="form-control shadow-sm" value="<?= e($client['business_name']) ?>" required>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label text-muted small fw-semibold">Client Login Email</label>
-                                    <input type="email" class="form-control bg-body-tertiary" value="<?= e($client['client_email']) ?>" readonly disabled>
+                                    <input type="email" class="form-control bg-body-tertiary shadow-sm" value="<?= e($client['client_email']) ?>" readonly disabled>
                                 </div>
                                 <div class="row mb-3">
                                     <div class="col-md-6">
                                         <label class="form-label text-muted small fw-semibold">
                                             Brand Color Accent
                                             <button type="button" class="info-popover-btn" data-bs-toggle="popover" title="Brand Color" data-bs-content="Injects client brand accent into dashboard header borders, buttons, and line charts.">
-                                                <i class="fa-solid fa-circle-info"></i>
+                                                i
                                             </button>
                                         </label>
-                                        <input type="color" name="brand_color" class="form-control form-control-color w-100" value="<?= e($client['brand_color'] ?? '#0F2D55') ?>">
+                                        <input type="color" name="brand_color" class="form-control form-control-color w-100 shadow-sm" value="<?= e($client['brand_color'] ?? '#0F2D55') ?>">
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label text-muted small fw-semibold">
                                             Currency Code
                                             <button type="button" class="info-popover-btn" data-bs-toggle="popover" title="Currency" data-bs-content="Formats spend, CPC, and CPM metrics in the requested currency symbol.">
-                                                <i class="fa-solid fa-circle-info"></i>
+                                                i
                                             </button>
                                         </label>
-                                        <select name="currency" class="form-select">
+                                        <select name="currency" class="form-select shadow-sm">
                                             <option value="INR" <?= ($client['currency'] ?? 'INR') === 'INR' ? 'selected' : '' ?>>INR (₹)</option>
                                             <option value="USD" <?= ($client['currency'] ?? '') === 'USD' ? 'selected' : '' ?>>USD ($)</option>
                                             <option value="AED" <?= ($client['currency'] ?? '') === 'AED' ? 'selected' : '' ?>>AED (AED)</option>
@@ -345,14 +352,14 @@ $csrfToken = generateCsrfToken();
                                     <label class="form-label text-muted small fw-semibold">
                                         Client Ad Account ID
                                         <button type="button" class="info-popover-btn" data-bs-toggle="popover" title="Ad Account ID" data-bs-content="Standard Meta Ad Account ID format: act_1234567890. Automatically populated during OAuth or overridden manually.">
-                                            <i class="fa-solid fa-circle-info"></i>
+                                            i
                                         </button>
                                     </label>
-                                    <input type="text" name="meta_ad_account_id" class="form-control" placeholder="act_123456789" value="<?= e($client['meta_ad_account_id']) ?>">
+                                    <input type="text" name="meta_ad_account_id" class="form-control shadow-sm" placeholder="act_123456789" value="<?= e($client['meta_ad_account_id']) ?>">
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label text-muted small fw-semibold">Upload Custom Logo</label>
-                                    <input type="file" name="logo" class="form-control" accept="image/*">
+                                    <input type="file" name="logo" class="form-control shadow-sm" accept="image/*">
                                     <?php if (!empty($client['logo_path'])): ?>
                                         <div class="mt-2">
                                             <small class="text-muted">Current Logo:</small><br>
@@ -368,16 +375,16 @@ $csrfToken = generateCsrfToken();
                     <div class="col-lg-6 mb-4">
                         <div class="card glass-card h-100 shadow-sm">
                             <div class="card-header bg-transparent border-bottom">
-                                <h5 class="m-0"><i class="fa-solid fa-sliders me-2 text-warning"></i> Dashboard Customization</h5>
+                                <h5 class="m-0 font-heading"><i class="fa-solid fa-sliders me-2 text-warning"></i> Dashboard Customization</h5>
                             </div>
                             <div class="card-body">
                                 <div class="mb-3">
                                     <label class="form-label text-muted small fw-semibold">Custom Report Title</label>
-                                    <input type="text" name="report_title" class="form-control" value="<?= e($client['report_title'] ?? 'My Ads Performance') ?>" required>
+                                    <input type="text" name="report_title" class="form-control shadow-sm" value="<?= e($client['report_title'] ?? 'My Ads Performance') ?>" required>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label text-muted small fw-semibold">Default Date Range Preset</label>
-                                    <select name="default_range" class="form-select">
+                                    <select name="default_range" class="form-select shadow-sm">
                                         <option value="last_7" <?= ($client['default_range'] ?? '') === 'last_7' ? 'selected' : '' ?>>Last 7 Days</option>
                                         <option value="last_30" <?= ($client['default_range'] ?? 'last_30') === 'last_30' ? 'selected' : '' ?>>Last 30 Days</option>
                                         <option value="this_month" <?= ($client['default_range'] ?? '') === 'this_month' ? 'selected' : '' ?>>This Month</option>
@@ -385,7 +392,7 @@ $csrfToken = generateCsrfToken();
                                     </select>
                                 </div>
 
-                                <h6 class="mt-4 mb-3 border-bottom pb-2">Visible Metrics & Widgets</h6>
+                                <h6 class="mt-4 mb-3 border-bottom pb-2 font-heading">Visible Metrics & Widgets</h6>
                                 <div class="row">
                                     <div class="col-6 mb-2">
                                         <div class="form-check form-switch">
@@ -430,7 +437,7 @@ $csrfToken = generateCsrfToken();
                 </div>
 
                 <div class="text-end">
-                    <button type="submit" class="btn btn-success btn-lg px-4 shadow-sm">
+                    <button type="submit" class="btn btn-success btn-lg px-4 shadow-sm font-heading">
                         <i class="fa-solid fa-floppy-disk me-2"></i> Save Client Settings
                     </button>
                 </div>

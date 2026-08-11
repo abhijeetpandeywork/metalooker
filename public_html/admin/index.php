@@ -73,8 +73,15 @@ $activeClients = $clientsStmt->fetchAll();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Agency Console Overview — MetaPanel Admin</title>
+    <!-- Prevent FOUT Theme Script -->
+    <script>
+        (function() {
+            var t = localStorage.getItem('metapanel_theme') || 'light';
+            document.documentElement.setAttribute('data-bs-theme', t);
+        })();
+    </script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="<?= APP_URL ?>/assets/css/style.css">
 </head>
@@ -126,14 +133,14 @@ $activeClients = $clientsStmt->fetchAll();
         <div class="admin-content flex-grow-1 p-4">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
-                    <h3 class="fw-bold m-0">Agency Operations Dashboard</h3>
+                    <h3 class="fw-bold m-0 font-heading">Agency Operations Dashboard</h3>
                     <p class="text-muted m-0"><i class="fa-solid fa-phone me-1 text-success"></i> Hotline: +91 9871633838 | Digital Rubix Meta Panel</p>
                 </div>
                 <div class="d-flex align-items-center gap-2">
-                    <button type="button" class="btn btn-sm btn-outline-dark btn-theme-toggle me-2">
+                    <button type="button" class="btn btn-sm btn-outline-dark btn-theme-toggle me-2 shadow-sm">
                         <i class="fa-solid fa-moon me-1"></i> Dark Mode
                     </button>
-                    <a href="<?= APP_URL ?>/admin/clients.php" class="btn btn-primary">
+                    <a href="<?= APP_URL ?>/admin/clients.php" class="btn btn-primary shadow-sm font-heading">
                         <i class="fa-solid fa-plus me-1"></i> Add New Client
                     </a>
                 </div>
@@ -142,16 +149,16 @@ $activeClients = $clientsStmt->fetchAll();
             <!-- Stats Overview Cards -->
             <div class="row g-3 mb-4">
                 <div class="col-md-6 col-xl-4">
-                    <div class="card glass-card p-3 h-100">
+                    <div class="card glass-card p-3 h-100 shadow-sm">
                         <div class="d-flex align-items-center justify-content-between">
                             <div>
-                                <span class="text-muted small fw-semibold text-uppercase">
+                                <span class="text-muted small fw-semibold text-uppercase font-heading">
                                     Active Client Portals
                                     <button type="button" class="info-popover-btn" data-bs-toggle="popover" title="Active Portals" data-bs-content="Total number of client accounts currently enabled for login and reporting.">
-                                        <i class="fa-solid fa-circle-info"></i>
+                                        i
                                     </button>
                                 </span>
-                                <h2 class="fw-bold m-0 mt-1"><?= formatNumber($totalClients) ?></h2>
+                                <h2 class="fw-bold m-0 mt-1 font-heading"><?= formatNumber($totalClients) ?></h2>
                             </div>
                             <div class="p-3 bg-primary bg-opacity-10 text-primary rounded-3">
                                 <i class="fa-solid fa-users-viewfinder fs-2"></i>
@@ -161,16 +168,16 @@ $activeClients = $clientsStmt->fetchAll();
                 </div>
 
                 <div class="col-md-6 col-xl-4">
-                    <div class="card glass-card p-3 h-100">
+                    <div class="card glass-card p-3 h-100 shadow-sm">
                         <div class="d-flex align-items-center justify-content-between">
                             <div>
-                                <span class="text-muted small fw-semibold text-uppercase">
+                                <span class="text-muted small fw-semibold text-uppercase font-heading">
                                     Total Ad Spend Managed
                                     <button type="button" class="info-popover-btn" data-bs-toggle="popover" title="Managed Spend" data-bs-content="Cumulative ad spend tracked across all connected client Meta accounts.">
-                                        <i class="fa-solid fa-circle-info"></i>
+                                        i
                                     </button>
                                 </span>
-                                <h2 class="fw-bold m-0 text-success mt-1"><?= formatCurrency($totalSpend, 'INR') ?></h2>
+                                <h2 class="fw-bold m-0 text-success mt-1 font-heading"><?= formatCurrency($totalSpend, 'INR') ?></h2>
                             </div>
                             <div class="p-3 bg-success bg-opacity-10 text-success rounded-3">
                                 <i class="fa-solid fa-money-bill-trend-up fs-2"></i>
@@ -180,11 +187,11 @@ $activeClients = $clientsStmt->fetchAll();
                 </div>
 
                 <div class="col-md-6 col-xl-4">
-                    <div class="card glass-card p-3 h-100">
+                    <div class="card glass-card p-3 h-100 shadow-sm">
                         <div class="d-flex align-items-center justify-content-between">
                             <div>
-                                <span class="text-muted small fw-semibold text-uppercase">Meta API Mode</span>
-                                <h2 class="fw-bold m-0 text-warning mt-1"><?= MOCK_META_API ? 'Mock Data Mode' : 'Live Graph API' ?></h2>
+                                <span class="text-muted small fw-semibold text-uppercase font-heading">Meta API Mode</span>
+                                <h2 class="fw-bold m-0 text-warning mt-1 font-heading"><?= MOCK_META_API ? 'Mock Data Mode' : 'Live Graph API' ?></h2>
                             </div>
                             <div class="p-3 bg-warning bg-opacity-10 text-warning rounded-3">
                                 <i class="fa-solid fa-server fs-2"></i>
@@ -197,8 +204,8 @@ $activeClients = $clientsStmt->fetchAll();
             <!-- Clients List Table -->
             <div class="card glass-card mb-4 shadow-sm">
                 <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center">
-                    <h5 class="m-0"><i class="fa-solid fa-building me-2 text-primary"></i> Managed Client Portals</h5>
-                    <a href="<?= APP_URL ?>/admin/clients.php" class="btn btn-sm btn-outline-secondary">Manage Directory</a>
+                    <h5 class="m-0 font-heading"><i class="fa-solid fa-building me-2 text-primary"></i> Managed Client Portals</h5>
+                    <a href="<?= APP_URL ?>/admin/clients.php" class="btn btn-sm btn-outline-secondary shadow-sm">Manage Directory</a>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
@@ -228,10 +235,10 @@ $activeClients = $clientsStmt->fetchAll();
                                             <td><span class="badge bg-secondary bg-opacity-20 text-body border"><?= e($c['currency']) ?></span></td>
                                             <td class="small text-muted"><?= e($c['last_sync'] ? date('d M Y, g:i A', strtotime($c['last_sync'])) : 'Never') ?></td>
                                             <td class="text-end">
-                                                <a href="<?= APP_URL ?>/dashboard.php?client_id=<?= $c['id'] ?>" class="btn btn-sm btn-outline-info me-1" target="_blank" title="Preview Dashboard">
+                                                <a href="<?= APP_URL ?>/dashboard.php?client_id=<?= $c['id'] ?>" class="btn btn-sm btn-outline-info me-1 shadow-sm" target="_blank" title="Preview Dashboard">
                                                     <i class="fa-solid fa-arrow-up-right-from-square"></i> Dashboard
                                                 </a>
-                                                <a href="<?= APP_URL ?>/admin/client_edit.php?id=<?= $c['id'] ?>" class="btn btn-sm btn-outline-primary" title="Edit Settings & Meta OAuth">
+                                                <a href="<?= APP_URL ?>/admin/client_edit.php?id=<?= $c['id'] ?>" class="btn btn-sm btn-outline-primary shadow-sm" title="Edit Settings & Meta OAuth">
                                                     <i class="fa-solid fa-gear"></i> Config
                                                 </a>
                                             </td>
@@ -247,7 +254,7 @@ $activeClients = $clientsStmt->fetchAll();
             <!-- Activity Log Audit Trail -->
             <div class="card glass-card shadow-sm">
                 <div class="card-header bg-transparent border-bottom">
-                    <h5 class="m-0"><i class="fa-solid fa-shield-halved text-warning me-2"></i> Security & Activity Log</h5>
+                    <h5 class="m-0 font-heading"><i class="fa-solid fa-shield-halved text-warning me-2"></i> Security & Activity Log</h5>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
