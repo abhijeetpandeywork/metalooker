@@ -232,17 +232,17 @@ $csrfToken = generateCsrfToken();
                                 <?php else: ?>
                                     <?php foreach ($clients as $c): ?>
                                         <?php
-                                            $tokenBadge = '<span class="badge bg-secondary">Unconnected</span>';
+                                            $tokenBadge = '<span class="badge bg-secondary text-white px-2 py-1"><i class="fa-solid fa-plug-circle-xmark me-1"></i> Unconnected</span>';
                                             if (!empty($c['meta_access_token']) && !empty($c['token_expires_at'])) {
                                                 $expires = new DateTime($c['token_expires_at']);
                                                 $now = new DateTime();
                                                 $days = (int)$now->diff($expires)->format('%r%a');
                                                 if ($days > 30) {
-                                                    $tokenBadge = '<span class="badge bg-success bg-opacity-15 text-success border border-success border-opacity-25">Healthy (' . $days . 'd)</span>';
+                                                    $tokenBadge = '<span class="badge bg-success text-white px-2 py-1"><i class="fa-solid fa-circle-check me-1"></i> Healthy (' . $days . 'd)</span>';
                                                 } elseif ($days > 0) {
-                                                    $tokenBadge = '<span class="badge bg-warning bg-opacity-15 text-warning border border-warning border-opacity-25">Expiring (' . $days . 'd)</span>';
+                                                    $tokenBadge = '<span class="badge bg-warning text-dark px-2 py-1"><i class="fa-solid fa-triangle-exclamation me-1"></i> Expiring (' . $days . 'd)</span>';
                                                 } else {
-                                                    $tokenBadge = '<span class="badge bg-danger bg-opacity-15 text-danger border border-danger border-opacity-25">Expired</span>';
+                                                    $tokenBadge = '<span class="badge bg-danger text-white px-2 py-1"><i class="fa-solid fa-circle-xmark me-1"></i> Expired</span>';
                                                 }
                                             }
                                         ?>
@@ -256,9 +256,9 @@ $csrfToken = generateCsrfToken();
                                             <td><?= $tokenBadge ?></td>
                                             <td>
                                                 <?php if ($c['active']): ?>
-                                                    <span class="badge bg-success bg-opacity-15 text-success border border-success border-opacity-25">Active</span>
+                                                    <span class="badge bg-success text-white px-3 py-2 fw-semibold shadow-sm"><i class="fa-solid fa-circle-check me-1"></i> Active</span>
                                                 <?php else: ?>
-                                                    <span class="badge bg-secondary bg-opacity-25 text-secondary border border-secondary">Paused</span>
+                                                    <span class="badge bg-secondary text-white px-3 py-2 fw-semibold shadow-sm"><i class="fa-solid fa-circle-pause me-1"></i> Paused</span>
                                                 <?php endif; ?>
                                             </td>
                                             <td class="text-end">
