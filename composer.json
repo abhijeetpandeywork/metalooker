@@ -1,0 +1,18 @@
+{
+    "name": "digitalrubix/metapanel",
+    "description": "Meta Ads Agency Client Panel for Digital Rubix",
+    "type": "project",
+    "require": {
+        "php": ">=8.2",
+        "mpdf/mpdf": "^8.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "MetaPanel\\": "public_html/includes/"
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "sort-packages": true
+    }
+}

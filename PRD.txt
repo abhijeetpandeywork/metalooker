@@ -1,0 +1,659 @@
+DIGITAL RUBIX
+
+Product Requirements Document
+Meta Ads Agency Client Panel
+In-House PHP Dashboard · Multi-Client · Hostinger Shared Hosting
+Built for Antigravity (AI Agentic IDE) ·  Version 1.0 · August 2026
+
+
+1. Project Overview
+
+Item
+Detail
+Project Name
+MetaPanel — Digital Rubix Meta Ads Agency Dashboard
+Owner
+Digital Rubix, Noida (IN) / US Ops
+Target Stack
+PHP 8.2 · MySQL 8 · Chart.js · Bootstrap 5 · Meta Graph API v21
+Hosting
+Hostinger Shared Hosting (hPanel) — panel.digitalrubix.com
+Clients
+~50 active clients, growing
+Dev Tool
+Google Antigravity 2.0 (Gemini 3.5 Flash agent)
+Delivery Mode
+Agentic build — single master prompt + sub-prompts per phase
+Auth Method
+Meta Business OAuth 2.0 per client + Agency Admin login
+Data Refresh
+PHP Cron job every 6 hours (Hostinger cron)
+Timeline Est.
+3–5 days to MVP (Antigravity agentic build)
+
+This document instructs Google Antigravity to build a fully functional, self-hosted PHP agency panel that connects to the Meta Graph API, pulls ad performance data for each client, and renders per-client customizable dashboards. Each client has a unique login, a branded view, and can be given read-only or controlled access to their own data only.
+
+2. Goals & Non-Goals
+
+2.1 Goals
+• Multi-client support — 50+ clients, each isolated, on a single codebase
+• Meta OAuth — each client connects their own Ad Account via Meta Business Login, OR agency connects on their behalf via System User token
+• Per-client dashboard customization — visible widgets, KPI cards, date range defaults, currency, report label — all configurable by agency admin
+• Cron-based data sync — automatic data pull every 6 hours, cached in MySQL; no live API call on dashboard load
+• White-label ready — agency can set logo, brand color per client portal
+• Role system — Super Admin (agency), Client (read-only), Team Member (Tanisha / Kumkum with selective access)
+• Hostinger-compatible — no composer packages that need root, no Node.js runtime; pure PHP + vanilla JS
+• Export — CSV and PDF export of any date range from dashboard
+2.2 Non-Goals (out of scope v1)
+• No Google Ads / TikTok / LinkedIn in v1 — Meta only
+• No real-time bid management or ad creation
+• No Looker Studio or third-party BI dependency
+• No Docker or VPS setup — must work on shared hosting
+
+3. Database Schema (MySQL)
+
+All tables use InnoDB, utf8mb4 charset. Migrations run as plain .sql files inside /db/migrations/.
+3.1 Table: users
+Column
+Definition
+id
+INT UNSIGNED AUTO_INCREMENT PRIMARY KEY
+name
+VARCHAR(120) NOT NULL
+email
+VARCHAR(191) UNIQUE NOT NULL
+password_hash
+VARCHAR(255) NOT NULL  (bcrypt, cost 12)
+role
+ENUM('super_admin','team_member','client') DEFAULT 'client'
+created_at
+DATETIME DEFAULT CURRENT_TIMESTAMP
+
+3.2 Table: clients
+Column
+Definition
+id
+INT UNSIGNED AUTO_INCREMENT PRIMARY KEY
+user_id
+FK → users.id (the client login account)
+business_name
+VARCHAR(200)
+logo_path
+VARCHAR(400) — uploaded logo URL
+brand_color
+VARCHAR(7) DEFAULT '#0F2D55'
+currency
+CHAR(3) DEFAULT 'INR'
+meta_ad_account_id
+VARCHAR(60) — act_XXXXXXXX format
+meta_access_token
+TEXT — encrypted at rest (openssl_encrypt AES-256)
+token_expires_at
+DATETIME — for long-lived token expiry tracking
+active
+TINYINT(1) DEFAULT 1
+created_at
+DATETIME DEFAULT CURRENT_TIMESTAMP
+
+3.3 Table: ad_data_cache
+Column
+Definition
+id
+BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY
+client_id
+FK → clients.id
+level
+ENUM('account','campaign','adset','ad')
+object_id
+VARCHAR(80) — Meta campaign/adset/ad ID
+object_name
+VARCHAR(300)
+date_start
+DATE
+date_stop
+DATE
+impressions
+INT UNSIGNED DEFAULT 0
+reach
+INT UNSIGNED DEFAULT 0
+clicks
+INT UNSIGNED DEFAULT 0
+spend
+DECIMAL(12,2) DEFAULT 0.00
+cpc
+DECIMAL(10,4) DEFAULT 0.0000
+ctr
+DECIMAL(8,4) DEFAULT 0.0000
+cpm
+DECIMAL(10,4) DEFAULT 0.0000
+conversions
+INT UNSIGNED DEFAULT 0
+cost_per_result
+DECIMAL(10,4) DEFAULT 0.0000
+roas
+DECIMAL(10,4) DEFAULT 0.0000
+frequency
+DECIMAL(8,4) DEFAULT 0.0000
+synced_at
+DATETIME — last time this row was pulled
+
+3.4 Table: dashboard_config
+Column
+Definition
+id
+INT UNSIGNED AUTO_INCREMENT PRIMARY KEY
+client_id
+FK → clients.id  UNIQUE
+widgets_json
+JSON — ordered array of enabled widget keys
+default_range
+ENUM('last_7','last_30','this_month','last_month') DEFAULT 'last_30'
+show_spend
+TINYINT(1) DEFAULT 1
+show_roas
+TINYINT(1) DEFAULT 1
+show_leads
+TINYINT(1) DEFAULT 1
+show_cpc
+TINYINT(1) DEFAULT 1
+show_ctr
+TINYINT(1) DEFAULT 1
+show_impressions
+TINYINT(1) DEFAULT 1
+show_campaigns
+TINYINT(1) DEFAULT 1
+show_adsets
+TINYINT(1) DEFAULT 1
+report_title
+VARCHAR(200) DEFAULT 'My Ads Performance'
+
+3.5 Additional Tables
+• sync_logs — client_id, synced_at, status (success/error), rows_inserted, error_message
+• team_client_access — team_member user_id ↔ client_id mapping (Tanisha / Kumkum access control)
+• activity_log — user_id, action, ip, created_at (audit trail)
+
+4. File & Folder Structure
+
+public_html/
+├── index.php                  ← redirects to /login or /dashboard
+├── login.php                  ← agency + client login page
+├── oauth_callback.php         ← Meta OAuth redirect handler
+├── logout.php
+├── dashboard.php              ← main client dashboard view
+├── admin/
+│   ├── index.php              ← super admin home
+│   ├── clients.php            ← list / add / edit clients
+│   ├── client_edit.php        ← per-client settings + dashboard config
+│   ├── team.php               ← manage team members + access
+│   └── sync_status.php        ← view cron sync logs
+├── api/
+│   ├── sync.php               ← cron target — pulls Meta API data
+│   ├── export_csv.php         ← CSV download endpoint
+│   └── export_pdf.php         ← PDF export (TCPDF / mPDF)
+├── assets/
+│   ├── css/style.css          ← main stylesheet (Bootstrap 5 + custom)
+│   ├── js/dashboard.js        ← Chart.js init, date range picker
+│   └── logos/                 ← client logo uploads
+├── includes/
+│   ├── config.php             ← DB creds, Meta App ID/Secret, AES key
+│   ├── db.php                 ← PDO singleton
+│   ├── auth.php               ← session check helpers
+│   ├── meta_api.php           ← Graph API wrapper class
+│   ├── token_manager.php      ← encrypt/decrypt, refresh tokens
+│   └── helpers.php            ← date utils, currency format
+db/
+│   └── migrations/            ← 001_create_tables.sql, etc.
+cron/
+│   └── sync_all.php           ← included by Hostinger cron (not web-accessible)
+.htaccess                      ← block direct access to includes/, db/, cron/
+.env                           ← DB_HOST, DB_NAME, DB_PASS, META_APP_ID, META_SECRET, AES_KEY
+
+5. Meta Graph API Integration
+
+5.1 App Setup (Agency does this ONCE)
+• Create a Meta App at developers.facebook.com → Business type → enable "Marketing API" product
+• App ID and App Secret → store in .env as META_APP_ID and META_APP_SECRET
+• Set OAuth Redirect URI → https://panel.digitalrubix.com/oauth_callback.php
+• Request permissions: ads_read, ads_management, business_management, read_insights
+5.2 Client Onboarding Flow (OAuth)
+• Admin goes to client_edit.php → clicks "Connect Meta Account"
+• System redirects client (or agency on their behalf) to Meta OAuth dialog with above scopes
+• Meta redirects to oauth_callback.php with short-lived token
+• System exchanges it for a long-lived token (60-day expiry) via /oauth/access_token endpoint
+• Token encrypted with AES-256 → stored in clients.meta_access_token
+• System calls /me/adaccounts to get their act_XXXXXXXX → stored in meta_ad_account_id
+5.3 Data Pull — Graph API Calls (in meta_api.php)
+GET /{ad-account-id}/insights
+  ?fields=campaign_name,adset_name,ad_name,impressions,reach,clicks,
+          spend,cpc,ctr,cpm,conversions,cost_per_result,frequency,
+          action_values,actions
+  &level=campaign          (loop for adset and ad too)
+  &time_range={"since":"YYYY-MM-DD","until":"YYYY-MM-DD"}
+  &time_increment=1        (day-by-day breakdown)
+  &limit=500
+  &access_token={client_token}
+5.4 Token Refresh Strategy
+• 60 days before expiry: cron job calls /oauth/access_token to get fresh long-lived token
+• On API call failure with error code 190 (token expired): flag client in DB, send admin email alert
+• Admin panel shows token health indicator per client (green/yellow/red)
+5.5 Rate Limit Handling
+• Meta API allows ~200 calls/hour per token. With 50 clients × 3 levels = 150 calls per sync cycle — well within limits
+• Add usleep(200000) (200ms) between client syncs to be safe
+• Parse X-Business-Use-Case-Usage header to detect approaching limits
+
+6. Dashboard UI Specification
+
+6.1 Client Dashboard Layout
+• Header bar: Client logo (left), Report title (center), Date range picker (right), Export button
+• KPI Cards row: Spend | Impressions | Clicks | CTR | CPC | CPM | Conversions | ROAS — each toggleable per client via admin config
+• Line Chart: Spend over time (daily breakdown) — Chart.js, responsive
+• Bar Chart: Impressions vs Clicks by Campaign
+• Campaigns Table: Name | Status | Budget | Spend | Clicks | CTR | CPC | Conversions | ROAS
+• Ad Sets Table: filterable by campaign, sortable columns
+• Ads Table: thumbnail (if available) | Ad Name | Spend | CTR | CPC
+• All sections toggleable per client from admin panel
+6.2 Date Range Picker
+• Presets: Last 7 Days, Last 14 Days, Last 30 Days, This Month, Last Month, Custom Range
+• Default preset configurable per client in dashboard_config
+• On change: AJAX call fetches filtered data from local MySQL — no live Meta API call
+6.3 Admin Panel Views
+• Client List: name, status, last sync, token health, quick-edit
+• Client Edit: basic info + logo upload + brand color + dashboard widget toggles + report title
+• Sync Status: table of last 10 sync runs per client — timestamp, rows pulled, status
+• Team Access: assign Tanisha / Kumkum to specific client IDs
+6.4 White-label Per Client
+• CSS custom property injected in <head> based on client brand_color from DB
+• Client logo shown in header; if none uploaded, show Digital Rubix logo
+• Report title editable per client (e.g. "Sharma Jewellers — Ad Performance")
+
+7. Security Requirements
+
+Concern
+Implementation
+Access Tokens
+AES-256-CBC encrypted in DB; key stored only in .env (not in code)
+Passwords
+bcrypt hash, cost factor 12; no plain text ever stored
+Session
+PHP session with regenerate_id() on login; session timeout 8 hours
+Client Isolation
+Every DB query for dashboard data includes WHERE client_id = ? binding; no cross-client data leak possible
+SQL Injection
+PDO prepared statements everywhere; zero raw string interpolation in queries
+XSS
+htmlspecialchars() on all user-facing output; CSP header in .htaccess
+CSRF
+CSRF token in all POST forms (hidden input + session check)
+.env Protection
+.htaccess denies direct access to .env, includes/, cron/, db/
+OAuth State Param
+Random state string in session verified on OAuth callback to prevent CSRF on OAuth flow
+Rate Limiting
+Login: max 5 attempts per IP per 15 min (tracked in DB or APCu)
+
+8. Cron Setup on Hostinger
+
+8.1 Cron Configuration in hPanel
+# Hostinger hPanel → Advanced → Cron Jobs → Add New
+# Frequency: every 6 hours
+0 */6 * * *   /usr/bin/php /home/u123456789/domains/panel.digitalrubix.com/public_html/cron/sync_all.php >> /tmp/metapanel_cron.log 2>&1
+8.2 sync_all.php Logic
+• Load all active clients from DB where active=1 AND meta_access_token IS NOT NULL
+• For each client: call meta_api.php to pull last 90 days of data (first run) or last 7 days (subsequent)
+• Upsert rows in ad_data_cache using INSERT ... ON DUPLICATE KEY UPDATE
+• Write success/error row to sync_logs table
+• On any Meta API error: log error, continue next client (non-blocking)
+• Total execution time for 50 clients should be under 3 minutes
+8.3 Hostinger-Specific Notes
+• Use require_once $_SERVER["DOCUMENT_ROOT"] . "/includes/config.php" — never relative paths in cron
+• Hostinger shared hosting has PHP 8.2 available — select it in hPanel → PHP Configuration
+• Max execution time for cron: set via set_time_limit(300) inside sync_all.php
+• File uploads (logos): use move_uploaded_file() to assets/logos/ — ensure 755 permissions
+
+9. Build Phases for Antigravity
+
+Feed these phases to Antigravity sequentially. Each phase is a standalone Antigravity session with its own sub-prompt (provided in Section 10).
+
+PHASE 1: Foundation — DB + File Structure + Auth
+✓  Create all MySQL tables as per Section 3 (migration SQL file)
+✓  Scaffold full folder structure as per Section 4
+✓  .htaccess protection for sensitive folders
+✓  .env file with all config keys (empty values to be filled)
+✓  includes/config.php — loads .env, defines constants
+✓  includes/db.php — PDO singleton with error handling
+✓  includes/auth.php — login(), logout(), isLoggedIn(), requireRole() helpers
+✓  login.php — Bootstrap 5 form, bcrypt verify, session start
+✓  Admin: create first super_admin user via seed SQL
+
+PHASE 2: Meta OAuth + Token Management
+✓  oauth_callback.php — full OAuth 2.0 flow
+✓  Short-lived → long-lived token exchange
+✓  AES-256 token encrypt/decrypt in token_manager.php
+✓  meta_api.php — MetaAPI class with getInsights(), getAdAccounts() methods
+✓  Admin: client_edit.php — "Connect Meta Account" button triggering OAuth
+✓  Token health indicator (green/yellow/red based on expires_at)
+
+PHASE 3: Cron Sync Engine
+✓  cron/sync_all.php — full sync loop for all active clients
+✓  Upsert logic in ad_data_cache (campaign + adset + ad levels)
+✓  sync_logs table writes on each client sync
+✓  Admin: sync_status.php — view last 10 syncs per client with status
+✓  Manual "Sync Now" button in admin per client (calls sync.php via AJAX)
+
+PHASE 4: Client Dashboard UI
+✓  dashboard.php — full responsive layout (Bootstrap 5)
+✓  KPI cards: Spend, Impressions, Clicks, CTR, CPC, CPM, Conversions, ROAS
+✓  Date range picker (Flatpickr or vanilla JS presets)
+✓  AJAX endpoint that returns filtered JSON from MySQL for selected date range
+✓  Chart.js Line Chart: daily spend over time
+✓  Chart.js Bar Chart: Impressions vs Clicks by Campaign
+✓  Campaigns, Ad Sets, Ads sortable tables
+✓  Brand color injection from client DB record
+✓  Client logo in header, custom report title
+
+PHASE 5: Admin Panel + Export + Polish
+✓  admin/clients.php — full client list with add/edit/deactivate
+✓  admin/team.php — team member management + client access assignment
+✓  Per-client dashboard_config editor (widget toggles, default range)
+✓  api/export_csv.php — full filtered CSV download
+✓  api/export_pdf.php — PDF report using mPDF (pure PHP)
+✓  Activity log — log all admin actions
+✓  Final security audit: CSRF tokens, XSS escaping, session hardening
+
+10. Antigravity Prompts
+
+Copy-paste each prompt into Antigravity at the start of each Phase session. The Master Prompt goes FIRST, before any phase prompt.
+
+  MASTER CONTEXT PROMPT — Paste this at the start of EVERY session  
+
+You are building a PHP-based Meta Ads Agency Dashboard called "MetaPanel"
+for Digital Rubix, a digital product engineering agency based in Noida, India.
+
+TECH STACK (strictly enforce):
+- PHP 8.2 (no frameworks — pure PHP)
+- MySQL 8 via PDO (prepared statements only, no raw queries)
+- Bootstrap 5.3 (CDN) for responsive layout
+- Chart.js 4.x (CDN) for all charts
+- Meta Graph API v21.0
+- mPDF for PDF export (via Composer — only allowed package)
+- Flatpickr (CDN) for date range picking
+- Zero Node.js, zero React, zero Vue, zero Laravel
+
+HOSTING CONSTRAINTS (critical):
+- Hostinger Shared Hosting — no root access, no CLI composer globally
+- Must use require_once with absolute DOCUMENT_ROOT paths
+- Cron via Hostinger hPanel, path: /usr/bin/php
+- Max memory 256MB per script
+
+SECURITY (non-negotiable):
+- All Meta access tokens encrypted AES-256-CBC before DB storage
+- PDO prepared statements on every single query — no exceptions
+- bcrypt for all passwords
+- CSRF token in every POST form
+- htmlspecialchars() on every echoed user-controlled value
+- .htaccess blocks direct access to includes/, cron/, db/, .env
+
+PROJECT STRUCTURE: As defined in the PRD — see Section 4 file tree.
+DATABASE SCHEMA: As defined in the PRD — see Section 3.
+
+Do not install anything beyond mPDF via Composer.
+Do not use .htaccess rewrites for routing — direct file access only.
+All PHP files start with <?php and have no closing ?> tag.
+Every function must have a docblock comment.
+
+  PHASE 1 PROMPT — Foundation  
+
+Build Phase 1 of MetaPanel — Foundation.
+
+Tasks:
+1. Generate db/migrations/001_create_tables.sql with ALL tables from the schema:
+   users, clients, ad_data_cache, dashboard_config, sync_logs,
+   team_client_access, activity_log.
+   Use InnoDB, utf8mb4, all foreign keys with ON DELETE CASCADE.
+
+2. Scaffold the full folder structure:
+   public_html/{index,login,logout,dashboard,oauth_callback}.php
+   public_html/admin/{index,clients,client_edit,team,sync_status}.php
+   public_html/api/{sync,export_csv,export_pdf}.php
+   public_html/assets/css/style.css
+   public_html/assets/js/dashboard.js
+   public_html/includes/{config,db,auth,meta_api,token_manager,helpers}.php
+   public_html/cron/sync_all.php
+   .htaccess (root + includes/.htaccess blocking direct file access)
+   .env.example (all keys, empty values)
+
+3. includes/config.php: parse_ini_file to load .env, define constants.
+
+4. includes/db.php: PDO singleton. DSN from config constants.
+   Throw on error. Cache instance statically.
+
+5. includes/auth.php:
+   login($email, $password) — verify bcrypt, set $_SESSION, regenerate_id()
+   logout() — destroy session
+   isLoggedIn() — returns bool
+   requireRole($role) — redirect to login.php if not matching
+   logActivity($user_id, $action) — insert to activity_log
+
+6. login.php: Bootstrap 5 card, email+password form, CSRF token,
+   error message display, brute force: max 5 attempts per IP per 15min.
+
+7. db/migrations/002_seed_admin.sql: insert one super_admin user
+   email: admin@digitalrubix.com, password: Change@123 (bcrypt hashed).
+
+Output every file fully — no truncation, no "..." placeholders.
+After all files are written, show the folder tree.
+
+  PHASE 2 PROMPT — Meta OAuth + Token Management  
+
+Build Phase 2 of MetaPanel — Meta OAuth and Token Management.
+(Phase 1 files already exist — do not regenerate them, only add new files.)
+
+Tasks:
+1. includes/token_manager.php:
+   encrypt($token) — AES-256-CBC with IV, returns base64 string
+   decrypt($encrypted) — returns plain token
+   Key source: AES_KEY constant from config.php
+
+2. includes/meta_api.php — MetaAPI class:
+   __construct($accessToken, $adAccountId)
+   getInsights($level, $dateStart, $dateStop) — calls Graph API v21
+     fields: campaign_name, adset_name, ad_name, impressions, reach,
+             clicks, spend, cpc, ctr, cpm, conversions, cost_per_result,
+             frequency, actions, action_values
+     Returns decoded JSON array or throws Exception on API error
+   getAdAccounts() — calls /me/adaccounts, returns array of {id, name}
+   exchangeForLongLivedToken($shortToken) — calls /oauth/access_token
+   Handle HTTP errors, parse error.code 190 (expired token) specially
+
+3. oauth_callback.php:
+   Verify state param matches session (CSRF protection)
+   Exchange code for short-lived token via Graph API
+   Call exchangeForLongLivedToken()
+   Call getAdAccounts() to fetch ad account ID
+   Encrypt token, store in clients table for the client_id in session
+   Redirect to admin/client_edit.php?id=X with success message
+
+4. admin/client_edit.php:
+   Load client from DB
+   Form: business_name, logo upload, brand_color (color picker), currency,
+         report_title
+   Section: "Meta Connection" — show current ad_account_id and token health
+   "Connect Meta Account" button → builds OAuth URL and redirects:
+     https://www.facebook.com/v21.0/dialog/oauth
+     ?client_id=APP_ID&redirect_uri=CALLBACK_URL
+     &scope=ads_read,ads_management,business_management,read_insights
+     &state=RANDOM_STATE_STORED_IN_SESSION
+   Token health: green if expires_at > 30 days, yellow if < 30, red if expired/null
+
+5. Update admin/clients.php:
+   Table of all clients — name, email, ad_account_id, token status badge,
+   last sync time, Active/Inactive toggle, Edit button, Add New Client button
+
+Output all new and modified files fully.
+
+  PHASE 3 PROMPT — Cron Sync Engine  
+
+Build Phase 3 of MetaPanel — Cron-Based Data Sync Engine.
+(Phase 1 + 2 files already exist.)
+
+Tasks:
+1. cron/sync_all.php:
+   - Must run as a standalone PHP script (called by Hostinger cron)
+   - Use absolute path: require_once dirname(__DIR__) . "/includes/config.php"
+   - set_time_limit(300)
+   - Fetch all active clients with non-null meta_access_token
+   - For each client:
+       a. Decrypt token via TokenManager::decrypt()
+       b. Determine date range:
+          - First sync (no rows in ad_data_cache for client): last 90 days
+          - Subsequent: last 7 days (overlap for late-reporting data)
+       c. Call MetaAPI->getInsights() at campaign, adset, ad levels
+       d. Upsert each row into ad_data_cache:
+          INSERT INTO ad_data_cache (...) VALUES (...)
+          ON DUPLICATE KEY UPDATE impressions=VALUES(impressions), ...
+          Unique key: (client_id, level, object_id, date_start, date_stop)
+       e. Write row to sync_logs: status=success, rows_inserted=N
+       f. On any exception: write status=error, error_message, continue
+       g. usleep(200000) between clients
+
+2. api/sync.php:
+   - Called via AJAX from admin panel (manual "Sync Now" for one client)
+   - Requires super_admin session
+   - Accepts POST: client_id
+   - Runs same sync logic as sync_all.php but for single client
+   - Returns JSON: {success: true, rows_inserted: N} or {success: false, error: "..."}
+
+3. admin/sync_status.php:
+   - For each client: show last 10 sync_logs rows
+   - Columns: Client Name | Synced At | Status (badge) | Rows | Error
+   - "Sync Now" button per client (AJAX call to api/sync.php)
+   - Show spinner while syncing, update row on completion
+
+Output all new/modified files fully.
+
+  PHASE 4 PROMPT — Client Dashboard UI  
+
+Build Phase 4 of MetaPanel — Client-Facing Dashboard.
+
+Tasks:
+1. dashboard.php:
+   - requireRole("client") OR requireRole("super_admin") OR requireRole("team_member")
+   - If team_member: verify client_id is in their team_client_access
+   - Load client record + dashboard_config from DB
+   - Inject brand color as CSS custom property: --brand-color: #XXXXXX
+   - Inject client logo in header (fallback to Digital Rubix logo)
+   - Show report_title as page heading
+
+2. Date Range Picker:
+   - Flatpickr (CDN) with range mode
+   - Preset buttons: 7D | 14D | 30D | This Month | Last Month | Custom
+   - Default loaded from dashboard_config.default_range
+   - On change: fetch /api/dashboard_data.php?client_id=X&from=Y&to=Z
+
+3. api/dashboard_data.php (new file):
+   - Returns JSON for selected date range from ad_data_cache
+   - Aggregated KPIs: total spend, impressions, clicks, avg CTR, avg CPC,
+     avg CPM, total conversions, ROAS (sum action_value / sum spend)
+   - Daily series: date, spend, impressions, clicks (for line/bar charts)
+   - Campaign table rows: campaign name, spend, clicks, CTR, CPC, conversions
+   - Ad set rows and Ad rows similarly
+   - Respect dashboard_config widget toggles: if show_spend=0, exclude spend
+
+4. KPI Cards (Bootstrap cards, 4-per-row responsive):
+   Show only cards where dashboard_config.show_X = 1
+   Each card: icon, metric label, value (formatted with currency/%), trend arrow
+
+5. Charts (Chart.js, loaded via AJAX data):
+   Line chart: Spend over time (daily)
+   Bar chart: Impressions vs Clicks by Campaign (top 10)
+
+6. Tables:
+   Campaigns, Ad Sets, Ads — each sortable (JS sort on column header click)
+   Columns from Section 6.1 of PRD
+   Paginate at 20 rows, client-side
+
+7. assets/css/style.css:
+   CSS variables for brand color applied to header, card borders, buttons
+   Dark sidebar for admin, white content area for client dashboard
+   Fully responsive down to 375px mobile
+
+Output all new/modified files fully. No truncation.
+
+  PHASE 5 PROMPT — Admin Panel, Export & Security Polish  
+
+Build Phase 5 of MetaPanel — Admin Panel Completion, Export, and Security.
+
+Tasks:
+1. admin/clients.php: fully functional CRUD:
+   - Add new client (creates user + client rows in one transaction)
+   - Edit client (routes to client_edit.php)
+   - Activate/deactivate toggle (AJAX)
+   - Delete (soft-delete: active=0, or hard-delete with confirmation modal)
+
+2. admin/team.php:
+   - List team members (users with role=team_member)
+   - Add team member form
+   - Per member: checkbox list of clients they can access
+   - Saves to team_client_access table
+
+3. admin/client_edit.php — Dashboard Config section:
+   - Toggle checkboxes for each widget (show_spend, show_roas, etc.)
+   - Default date range dropdown
+   - Report title text input
+   - Saves to dashboard_config table (INSERT ... ON DUPLICATE KEY UPDATE)
+
+4. api/export_csv.php:
+   - POST: client_id, date_from, date_to, level (campaign/adset/ad)
+   - Requires valid session (client sees only their own data)
+   - Outputs CSV with headers: Date, Name, Spend, Impressions, Clicks,
+     CTR, CPC, CPM, Conversions, ROAS
+   - header("Content-Type: text/csv") + Content-Disposition: attachment
+
+5. api/export_pdf.php:
+   - Use mPDF (Composer) for PDF generation
+   - One-page summary: KPI cards, spend chart (Chart.js rendered as PNG
+     via base64 passed from JS), campaign table
+   - Header: client logo + report title + date range
+   - Footer: "Generated by Digital Rubix | MetaPanel"
+
+6. Security Hardening:
+   - Audit every POST form: add CSRF token check if missing
+   - Audit every echoed variable: wrap in htmlspecialchars() if missing
+   - Add X-Frame-Options: DENY, X-Content-Type-Options: nosniff,
+     X-XSS-Protection: 1; mode=block headers in config.php via header()
+   - Login brute force: review and confirm it works
+   - Confirm .htaccess blocks /includes/, /cron/, /db/, /.env direct access
+
+7. Final index.php:
+   - If not logged in: redirect to login.php
+   - If super_admin or team_member: redirect to admin/index.php
+   - If client: redirect to dashboard.php
+
+Output all new/modified files fully. Run a final check listing all files created.
+
+11. Deployment Checklist (Hostinger)
+
+Step
+Action
+Step 1
+Create MySQL DB in hPanel → Databases → MySQL Databases
+Step 2
+Import db/migrations/001_create_tables.sql + 002_seed_admin.sql via phpMyAdmin
+Step 3
+Upload all files via hPanel File Manager or FTP (FileZilla)
+Step 4
+Rename .env.example to .env, fill in DB_HOST, DB_NAME, DB_USER, DB_PASS, META_APP_ID, META_APP_SECRET, AES_KEY (32-char random string)
+Step 5
+hPanel → Advanced → PHP Configuration → Select PHP 8.2
+Step 6
+Set up Cron: hPanel → Advanced → Cron Jobs → add the sync_all.php cron (Section 8.1)
+Step 7
+Point subdomain panel.digitalrubix.com to public_html folder
+Step 8
+Enable SSL (hPanel → SSL → Let's Encrypt, free)
+Step 9
+Login as admin@digitalrubix.com / Change@123 → IMMEDIATELY change password
+Step 10
+Add first client, connect Meta account via OAuth, wait for first cron sync or hit Sync Now
+
+The system should be fully operational within 30 minutes of uploading, assuming Meta App credentials are ready and the MySQL database is created. Total agency cost: Hostinger plan (already existing) + Meta App (free) = ₹0 additional recurring cost.

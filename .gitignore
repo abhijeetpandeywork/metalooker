@@ -1,0 +1,21 @@
+# Dependencies & Vendors
+node_modules/
+/vendor/
+composer.lock
+package-lock.json
+
+# Environment & Credentials
+.env
+*.env
+
+# Temporary & Extracted Files
+extracted_docx/
+*.zip
+*.tmp
+*.log
+
+# OS / Editor Files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

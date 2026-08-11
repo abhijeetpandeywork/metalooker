@@ -1,0 +1,12 @@
+# Prevent directory browsing
+Options -Indexes
+
+# Protect sensitive files and directories
+<FilesMatch "^\.env|composer\.(json|lock)|schema\.sql|\.git">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Restrict direct access to db and cron directories
+RewriteEngine On
+RewriteRule ^(db|cron)/ - [F,L]
