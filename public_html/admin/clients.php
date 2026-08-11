@@ -25,11 +25,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     if (!verifyCsrfToken($csrfToken)) {
         $errorMessage = "CSRF verification failed.";
     } else {
-        $businessName = trim($_POST['business_name'] ?? '');
-        $email        = trim($_POST['email'] ?? '');
-        $password     = $_POST['password'] ?? '';
-        $currency     = strtoupper(trim($_POST['currency'] ?? 'INR'));
-        $brandColor   = trim($_POST['brand_color'] ?? '#0F2D55');
+        $businessName    = trim($_POST['business_name'] ?? '');
+        $email           = trim($_POST['email'] ?? '');
+        $password        = $_POST['password'] ?? '';
+        $currency        = strtoupper(trim($_POST['currency'] ?? 'INR'));
+        $brandColor      = trim($_POST['brand_color'] ?? '#0F2D55');
+        $targetLeadValue = isset($_POST['target_lead_value']) && $_POST['target_lead_value'] !== '' ? (float)$_POST['target_lead_value'] : 500.00;
 
         if (empty($businessName) || empty($email) || empty($password)) {
             $errorMessage = "All fields marked with * are required.";
@@ -43,10 +44,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 $userId = (int)$db->lastInsertId();
 
                 $clientStmt = $db->prepare("
-                    INSERT INTO clients (user_id, business_name, brand_color, currency, active)
-                    VALUES (?, ?, ?, ?, 1)
+                    INSERT INTO clients (user_id, business_name, brand_color, currency, target_lead_value, active)
+                    VALUES (?, ?, ?, ?, ?, 1)
                 ");
-                $clientStmt->execute([$userId, $businessName, $brandColor, $currency]);
+                $clientStmt->execute([$userId, $businessName, $brandColor, $currency, $targetLeadValue]);
                 $clientId = (int)$db->lastInsertId();
 
                 $configStmt = $db->prepare("
@@ -325,6 +326,16 @@ $csrfToken = generateCsrfToken();
                                 <label class="form-label text-muted small fw-semibold">Brand Color</label>
                                 <input type="color" name="brand_color" class="form-control form-control-color w-100 shadow-sm" value="#0F2D55">
                             </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-muted small fw-semibold">
+                                Target Lead / Deal Value (₹)
+                                <button type="button" class="info-popover-btn" data-bs-toggle="popover" title="Target Lead Value Guide" data-bs-content="<b>E-Commerce Accounts:</b> Leave default (₹500) or set to 0. Meta Pixel/CAPI automatically feeds exact sales numbers.<br><br><b>Lead Gen / WhatsApp Accounts:</b> Enter expected deal value per lead (e.g. ₹500.00) so ROAS can be calculated as (Leads * Target Value) / Ad Spend.">
+                                    i
+                                </button>
+                            </label>
+                            <input type="number" step="0.01" min="0" name="target_lead_value" class="form-control shadow-sm" value="500.00">
+                            <small class="text-muted">For Lead Gen / WhatsApp ads. E-commerce Pixel purchase ads auto-detect sales value from Meta.</small>
                         </div>
                     </div>
                     <div class="modal-footer border-top">
