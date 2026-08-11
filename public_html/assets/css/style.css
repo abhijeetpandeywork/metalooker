@@ -278,3 +278,10 @@ h1, h2, h3, h4, h5, h6, .font-heading {
         min-height: auto;
     }
 }
+
+/* Disable Printing Globally */
+@media print {
+    body {
+        display: none !important;
+    }
+}

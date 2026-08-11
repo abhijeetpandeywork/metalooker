@@ -143,7 +143,7 @@ $activeClients = $clientsStmt->fetchAll();
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h3 class="fw-bold m-0 font-heading">Agency Operations Dashboard</h3>
-                    <p class="text-muted m-0"><i class="fa-solid fa-phone me-1 text-success"></i> Hotline: +91 9871633838 | Digital Rubix Meta Panel</p>
+                    <p class="text-muted m-0">Digital Rubix Meta Panel</p>
                 </div>
                 <div class="d-flex align-items-center gap-2">
                     <button type="button" class="btn btn-sm btn-outline-dark btn-theme-toggle me-2 shadow-sm">

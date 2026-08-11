@@ -129,7 +129,7 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
             </a>
             <div class="border-start ps-3 ms-2 d-none d-sm-block">
                 <h5 class="m-0 fw-bold text-primary font-heading"><?= e($client['business_name']) ?></h5>
-                <small class="text-muted"><i class="fa-solid fa-phone me-1 text-success"></i> Hotline: +91 9871633838 | <?= e($reportTitle) ?></small>
+                <small class="text-muted"><?= e($reportTitle) ?></small>
             </div>
         </div>
 
@@ -155,19 +155,6 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
             <!-- Theme Mode Switcher -->
             <button type="button" class="btn btn-sm btn-outline-dark btn-theme-toggle shadow-sm">
                 <i class="fa-solid fa-moon me-1"></i> Dark Mode
-            </button>
-
-            <!-- Onboarding & Connection Guide Modal Trigger -->
-            <button type="button" class="btn btn-sm btn-outline-info shadow-sm" data-bs-toggle="modal" data-bs-target="#metaGuideModal">
-                <i class="fa-solid fa-circle-question me-1"></i> Meta API Guide
-            </button>
-
-            <!-- Export Buttons -->
-            <button id="btn-export-csv" class="btn btn-sm btn-outline-success shadow-sm">
-                <i class="fa-solid fa-file-csv me-1"></i> CSV Export
-            </button>
-            <button id="btn-export-pdf" class="btn btn-sm btn-outline-danger shadow-sm">
-                <i class="fa-solid fa-file-pdf me-1"></i> PDF Export
             </button>
 
             <!-- Admin Gateway Backlink -->
