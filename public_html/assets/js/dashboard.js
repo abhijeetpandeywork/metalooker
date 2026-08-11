@@ -416,7 +416,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const c = (curr || '').toUpperCase().trim();
         switch(c) {
             case 'INR': return '₹';
-            case 'USD': case 'CAD': case 'AUD': case 'NZD': case 'SGD': return '$';
+            case 'USD': return '$';
             case 'EUR': return '€';
             case 'GBP': return '£';
             case 'AED': return 'AED ';
@@ -425,8 +425,24 @@ document.addEventListener('DOMContentLoaded', function() {
             case 'KWD': return 'KWD ';
             case 'OMR': return 'OMR ';
             case 'BHD': return 'BHD ';
+            case 'CAD': return 'CA$';
+            case 'AUD': return 'A$';
+            case 'SGD': return 'S$';
+            case 'NZD': return 'NZ$';
+            case 'MYR': return 'RM ';
+            case 'THB': return '฿';
             case 'JPY': return '¥';
             case 'ZAR': return 'R ';
+            case 'BRL': return 'R$';
+            case 'MXN': return 'Mex$';
+            case 'EGP': return 'E£ ';
+            case 'PHP': return '₱';
+            case 'IDR': return 'Rp ';
+            case 'VND': return '₫';
+            case 'PKR': return 'Rs ';
+            case 'BDT': return '৳';
+            case 'LKR': return 'Rs ';
+            case 'CHF': return 'CHF ';
             default: return c ? (c + ' ') : '₹';
         }
     }

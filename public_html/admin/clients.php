@@ -29,6 +29,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $email           = trim($_POST['email'] ?? '');
         $password        = $_POST['password'] ?? '';
         $currency        = strtoupper(trim($_POST['currency'] ?? 'INR'));
+        $countryName     = trim($_POST['country_name'] ?? 'India');
+        $countryCode     = strtoupper(trim($_POST['country_code'] ?? 'IN'));
         $brandColor      = trim($_POST['brand_color'] ?? '#0F2D55');
         $targetLeadValue = isset($_POST['target_lead_value']) && $_POST['target_lead_value'] !== '' ? (float)$_POST['target_lead_value'] : 500.00;
 
@@ -44,10 +46,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 $userId = (int)$db->lastInsertId();
 
                 $clientStmt = $db->prepare("
-                    INSERT INTO clients (user_id, business_name, brand_color, currency, target_lead_value, active)
-                    VALUES (?, ?, ?, ?, ?, 1)
+                    INSERT INTO clients (user_id, business_name, brand_color, currency, country_code, country_name, target_lead_value, active)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, 1)
                 ");
-                $clientStmt->execute([$userId, $businessName, $brandColor, $currency, $targetLeadValue]);
+                $clientStmt->execute([$userId, $businessName, $brandColor, $currency, $countryCode, $countryName, $targetLeadValue]);
                 $clientId = (int)$db->lastInsertId();
 
                 $configStmt = $db->prepare("

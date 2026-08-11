@@ -29,6 +29,8 @@ try {
             logo_path VARCHAR(400) DEFAULT NULL,
             brand_color VARCHAR(7) DEFAULT '#0F2D55',
             currency CHAR(3) DEFAULT 'INR',
+            country_code VARCHAR(10) DEFAULT 'IN',
+            country_name VARCHAR(100) DEFAULT 'India',
             meta_ad_account_id VARCHAR(60) DEFAULT NULL,
             meta_access_token TEXT DEFAULT NULL,
             token_expires_at DATETIME DEFAULT NULL,
@@ -113,9 +115,15 @@ try {
 
     try {
         $db->exec("ALTER TABLE clients ADD COLUMN target_lead_value DECIMAL(10,2) DEFAULT 500.00");
-    } catch (Exception $eCol) {
-        // Ignore if column exists
-    }
+    } catch (Exception $eCol) {}
+
+    try {
+        $db->exec("ALTER TABLE clients ADD COLUMN country_code VARCHAR(10) DEFAULT 'IN'");
+    } catch (Exception $eCol2) {}
+
+    try {
+        $db->exec("ALTER TABLE clients ADD COLUMN country_name VARCHAR(100) DEFAULT 'India'");
+    } catch (Exception $eCol3) {}
 
     // Seed dashboard_config for all active clients
     $allClients = $db->query("SELECT id FROM clients")->fetchAll();

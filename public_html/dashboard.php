@@ -128,7 +128,11 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
                 <img src="<?= e($logoUrl) ?>" alt="Digital Rubix Logo" class="agency-logo-img">
             </a>
             <div class="border-start ps-3 ms-2 d-none d-sm-block">
-                <h5 class="m-0 fw-bold text-primary font-heading"><?= e($client['business_name']) ?></h5>
+                <h5 class="m-0 fw-bold text-primary font-heading">
+                    <?= e($client['business_name']) ?>
+                    <span class="badge bg-light text-secondary border ms-2 fs-6 fw-normal"><i class="fa-solid fa-globe text-info me-1"></i><?= e($client['country_name'] ?? 'India') ?></span>
+                    <span class="badge bg-light text-primary border ms-1 fs-6 fw-normal"><i class="fa-solid fa-coins text-warning me-1"></i><?= e($client['currency'] ?? 'INR') ?></span>
+                </h5>
                 <small class="text-muted"><?= e($reportTitle) ?></small>
             </div>
         </div>

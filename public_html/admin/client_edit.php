@@ -48,11 +48,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!verifyCsrfToken($csrfToken)) {
         $errorMessage = "Security validation failed. Please try again.";
     } else {
-        $businessName = trim($_POST['business_name'] ?? '');
-        $brandColor   = trim($_POST['brand_color'] ?? '#0F2D55');
-        $currency     = strtoupper(trim($_POST['currency'] ?? 'INR'));
-        $reportTitle  = trim($_POST['report_title'] ?? 'My Ads Performance');
-        $defaultRange = $_POST['default_range'] ?? 'last_30';
+        $businessName    = trim($_POST['business_name'] ?? '');
+        $brandColor      = trim($_POST['brand_color'] ?? '#0F2D55');
+        $currency        = strtoupper(trim($_POST['currency'] ?? 'INR'));
+        $countryCode     = strtoupper(trim($_POST['country_code'] ?? 'IN'));
+        $countryName     = trim($_POST['country_name'] ?? 'India');
+        $reportTitle     = trim($_POST['report_title'] ?? 'My Ads Performance');
+        $defaultRange    = $_POST['default_range'] ?? 'last_30';
         $metaAdAccountId = trim($_POST['meta_ad_account_id'] ?? '');
 
         $targetLeadValue = (float)($_POST['target_lead_value'] ?? 500.00);
@@ -102,11 +104,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         logo_path = ?,
                         brand_color = ?,
                         currency = ?,
+                        country_code = ?,
+                        country_name = ?,
                         meta_ad_account_id = ?,
                         target_lead_value = ?
                     WHERE id = ?
                 ");
-                $updateClient->execute([$businessName, $logoPath, $brandColor, $currency, $metaAdAccountId, $targetLeadValue, $clientId]);
+                $updateClient->execute([$businessName, $logoPath, $brandColor, $currency, $countryCode, $countryName, $metaAdAccountId, $targetLeadValue, $clientId]);
 
                 $driver = $db->getAttribute(PDO::ATTR_DRIVER_NAME);
                 if ($driver === 'sqlite') {
@@ -353,29 +357,53 @@ $csrfToken = generateCsrfToken();
                                         <input type="color" name="brand_color" class="form-control form-control-color w-100 shadow-sm" value="<?= e($client['brand_color'] ?? '#0F2D55') ?>">
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label text-muted small fw-semibold">
-                                            Currency Code
-                                            <button type="button" class="info-popover-btn" data-bs-toggle="popover" title="Currency" data-bs-content="Formats spend, CPC, and CPM metrics in the requested currency symbol.">
-                                                i
-                                            </button>
-                                        </label>
-                                        <select name="currency" class="form-select shadow-sm">
-                                            <option value="INR" <?= ($client['currency'] ?? 'INR') === 'INR' ? 'selected' : '' ?>>INR (₹)</option>
-                                            <option value="AED" <?= ($client['currency'] ?? '') === 'AED' ? 'selected' : '' ?>>AED (AED)</option>
-                                            <option value="USD" <?= ($client['currency'] ?? '') === 'USD' ? 'selected' : '' ?>>USD ($)</option>
-                                            <option value="EUR" <?= ($client['currency'] ?? '') === 'EUR' ? 'selected' : '' ?>>EUR (€)</option>
-                                            <option value="GBP" <?= ($client['currency'] ?? '') === 'GBP' ? 'selected' : '' ?>>GBP (£)</option>
-                                            <option value="SAR" <?= ($client['currency'] ?? '') === 'SAR' ? 'selected' : '' ?>>SAR (Saudi Riyal)</option>
-                                            <option value="QAR" <?= ($client['currency'] ?? '') === 'QAR' ? 'selected' : '' ?>>QAR (Qatari Riyal)</option>
-                                            <option value="KWD" <?= ($client['currency'] ?? '') === 'KWD' ? 'selected' : '' ?>>KWD (Kuwaiti Dinar)</option>
-                                            <option value="OMR" <?= ($client['currency'] ?? '') === 'OMR' ? 'selected' : '' ?>>OMR (Omani Rial)</option>
-                                            <option value="BHD" <?= ($client['currency'] ?? '') === 'BHD' ? 'selected' : '' ?>>BHD (Bahraini Dinar)</option>
-                                            <option value="CAD" <?= ($client['currency'] ?? '') === 'CAD' ? 'selected' : '' ?>>CAD ($)</option>
-                                            <option value="AUD" <?= ($client['currency'] ?? '') === 'AUD' ? 'selected' : '' ?>>AUD ($)</option>
-                                            <option value="SGD" <?= ($client['currency'] ?? '') === 'SGD' ? 'selected' : '' ?>>SGD ($)</option>
-                                        </select>
-                                    </div>
-                                </div>
+                                         <label class="form-label text-muted small fw-semibold">
+                                             Currency Code
+                                             <button type="button" class="info-popover-btn" data-bs-toggle="popover" title="Currency" data-bs-content="Formats spend, CPC, and CPM metrics in the requested currency symbol.">
+                                                 i
+                                             </button>
+                                         </label>
+                                         <select name="currency" class="form-select shadow-sm">
+                                             <option value="INR" <?= ($client['currency'] ?? 'INR') === 'INR' ? 'selected' : '' ?>>INR (₹ - Indian Rupee)</option>
+                                             <option value="USD" <?= ($client['currency'] ?? '') === 'USD' ? 'selected' : '' ?>>USD ($ - US Dollar)</option>
+                                             <option value="EUR" <?= ($client['currency'] ?? '') === 'EUR' ? 'selected' : '' ?>>EUR (€ - Euro)</option>
+                                             <option value="GBP" <?= ($client['currency'] ?? '') === 'GBP' ? 'selected' : '' ?>>GBP (£ - British Pound)</option>
+                                             <option value="AED" <?= ($client['currency'] ?? '') === 'AED' ? 'selected' : '' ?>>AED (AED - UAE Dirham)</option>
+                                             <option value="SAR" <?= ($client['currency'] ?? '') === 'SAR' ? 'selected' : '' ?>>SAR (SAR - Saudi Riyal)</option>
+                                             <option value="QAR" <?= ($client['currency'] ?? '') === 'QAR' ? 'selected' : '' ?>>QAR (QR - Qatari Riyal)</option>
+                                             <option value="KWD" <?= ($client['currency'] ?? '') === 'KWD' ? 'selected' : '' ?>>KWD (KD - Kuwaiti Dinar)</option>
+                                             <option value="OMR" <?= ($client['currency'] ?? '') === 'OMR' ? 'selected' : '' ?>>OMR (OMR - Omani Rial)</option>
+                                             <option value="BHD" <?= ($client['currency'] ?? '') === 'BHD' ? 'selected' : '' ?>>BHD (BD - Bahraini Dinar)</option>
+                                             <option value="CAD" <?= ($client['currency'] ?? '') === 'CAD' ? 'selected' : '' ?>>CAD (CA$ - Canadian Dollar)</option>
+                                             <option value="AUD" <?= ($client['currency'] ?? '') === 'AUD' ? 'selected' : '' ?>>AUD (A$ - Australian Dollar)</option>
+                                             <option value="SGD" <?= ($client['currency'] ?? '') === 'SGD' ? 'selected' : '' ?>>SGD (S$ - Singapore Dollar)</option>
+                                             <option value="MYR" <?= ($client['currency'] ?? '') === 'MYR' ? 'selected' : '' ?>>MYR (RM - Malaysian Ringgit)</option>
+                                             <option value="THB" <?= ($client['currency'] ?? '') === 'THB' ? 'selected' : '' ?>>THB (฿ - Thai Baht)</option>
+                                             <option value="JPY" <?= ($client['currency'] ?? '') === 'JPY' ? 'selected' : '' ?>>JPY (¥ - Japanese Yen)</option>
+                                             <option value="ZAR" <?= ($client['currency'] ?? '') === 'ZAR' ? 'selected' : '' ?>>ZAR (R - South African Rand)</option>
+                                             <option value="BRL" <?= ($client['currency'] ?? '') === 'BRL' ? 'selected' : '' ?>>BRL (R$ - Brazilian Real)</option>
+                                             <option value="MXN" <?= ($client['currency'] ?? '') === 'MXN' ? 'selected' : '' ?>>MXN (Mex$ - Mexican Peso)</option>
+                                             <option value="EGP" <?= ($client['currency'] ?? '') === 'EGP' ? 'selected' : '' ?>>EGP (E£ - Egyptian Pound)</option>
+                                             <option value="PHP" <?= ($client['currency'] ?? '') === 'PHP' ? 'selected' : '' ?>>PHP (₱ - Philippine Peso)</option>
+                                             <option value="IDR" <?= ($client['currency'] ?? '') === 'IDR' ? 'selected' : '' ?>>IDR (Rp - Indonesian Rupiah)</option>
+                                             <option value="VND" <?= ($client['currency'] ?? '') === 'VND' ? 'selected' : '' ?>>VND (₫ - Vietnamese Dong)</option>
+                                             <option value="PKR" <?= ($client['currency'] ?? '') === 'PKR' ? 'selected' : '' ?>>PKR (Rs - Pakistani Rupee)</option>
+                                             <option value="BDT" <?= ($client['currency'] ?? '') === 'BDT' ? 'selected' : '' ?>>BDT (৳ - Bangladeshi Taka)</option>
+                                             <option value="LKR" <?= ($client['currency'] ?? '') === 'LKR' ? 'selected' : '' ?>>LKR (Rs - Sri Lankan Rupee)</option>
+                                             <option value="CHF" <?= ($client['currency'] ?? '') === 'CHF' ? 'selected' : '' ?>>CHF (CHF - Swiss Franc)</option>
+                                         </select>
+                                     </div>
+                                 </div>
+                                 <div class="mb-3">
+                                     <label class="form-label text-muted small fw-semibold">
+                                         Primary Country / Region
+                                         <button type="button" class="info-popover-btn" data-bs-toggle="popover" title="Country" data-bs-content="Configures country localization and flag badge on the dashboard.">
+                                             i
+                                         </button>
+                                     </label>
+                                     <input type="text" name="country_name" class="form-control shadow-sm" value="<?= e($client['country_name'] ?? 'India') ?>" placeholder="e.g. India, United States, UAE" required>
+                                     <input type="hidden" name="country_code" value="<?= e($client['country_code'] ?? 'IN') ?>">
+                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label text-muted small fw-semibold">
                                         Target Lead / Deal Value (₹)
