@@ -122,8 +122,8 @@ try {
     } catch (Exception $eCol2) {}
 
     try {
-        $db->exec("ALTER TABLE clients ADD COLUMN country_name VARCHAR(100) DEFAULT 'India'");
-    } catch (Exception $eCol3) {}
+        $db->exec("UPDATE clients SET currency = 'AED', country_code = 'AE', country_name = 'United Arab Emirates' WHERE business_name LIKE '%Sky Line%' OR id = 6");
+    } catch (Exception $eCol4) {}
 
     // Seed dashboard_config for all active clients
     $allClients = $db->query("SELECT id FROM clients")->fetchAll();
