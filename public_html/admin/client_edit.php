@@ -180,7 +180,7 @@ $_SESSION['oauth_client_id'] = $clientId;
 $oauthUrl = "https://www.facebook.com/" . META_GRAPH_VERSION . "/dialog/oauth?" . http_build_query([
     'client_id'     => META_APP_ID,
     'redirect_uri'  => APP_URL . '/oauth_callback.php',
-    'scope'         => 'ads_read,ads_management,business_management,read_insights',
+    'scope'         => 'ads_read,read_insights',
     'state'         => $oauthState,
     'response_type' => 'code'
 ]);
