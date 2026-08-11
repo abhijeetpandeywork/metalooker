@@ -75,8 +75,11 @@ try {
         $cStmt->execute([$clientId]);
         $clientObj = $cStmt->fetch();
         if ($clientObj) {
-            require_once __DIR__ . '/../../cron/sync_all.php';
-            syncClientData($clientObj);
+            $cronFile = file_exists(dirname(__DIR__, 2) . '/cron/sync_all.php') ? dirname(__DIR__, 2) . '/cron/sync_all.php' : __DIR__ . '/../cron/sync_all.php';
+            if (file_exists($cronFile)) {
+                require_once $cronFile;
+                syncClientData($clientObj);
+            }
         }
     }
 

@@ -13,7 +13,8 @@ header('Content-Type: application/json');
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/auth.php';
-require_once __DIR__ . '/../../cron/sync_all.php'; // Reuse syncClientData function
+$cronFile = file_exists(dirname(__DIR__, 2) . '/cron/sync_all.php') ? dirname(__DIR__, 2) . '/cron/sync_all.php' : __DIR__ . '/../cron/sync_all.php';
+require_once $cronFile;
 
 if (!isLoggedIn() || !in_array($_SESSION['user_role'], ['super_admin', 'team_member'], true)) {
     echo json_encode(['success' => false, 'error' => 'Unauthorized access.']);
