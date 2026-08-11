@@ -54,12 +54,16 @@ class Database {
             } catch (PDOException $e) {
                 // 2. Automatic Fallback to Embedded SQLite
                 error_log("MySQL Connection Failed (" . $e->getMessage() . "). Falling back to SQLite.");
-                $dbDir = dirname(__DIR__, 2) . '/db';
+                $dbDir = __DIR__ . '/storage';
                 if (!is_dir($dbDir)) {
-                    mkdir($dbDir, 0755, true);
+                    @mkdir($dbDir, 0777, true);
                 }
+                @chmod($dbDir, 0777);
                 $sqlitePath = $dbDir . '/metapanel.sqlite';
-                $sqliteDsn  = "sqlite:" . $sqlitePath;
+                if (file_exists($sqlitePath)) {
+                    @chmod($sqlitePath, 0777);
+                }
+                $sqliteDsn = "sqlite:" . $sqlitePath;
 
                 self::$instance = new PDO($sqliteDsn, null, null, $options);
                 self::$instance->exec("PRAGMA foreign_keys = ON;");
