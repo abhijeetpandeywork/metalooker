@@ -87,10 +87,24 @@ try {
         $longLivedToken = $longTokenData['access_token'] ?? $shortLivedToken;
         $expiresIn = $longTokenData['expires_in'] ?? (60 * 86400);
 
-        // Fetch primary Ad Account ID
-        $metaApi = new MetaAPI($longLivedToken);
-        $adAccounts = $metaApi->getAdAccounts();
-        $adAccountId = !empty($adAccounts[0]['id']) ? $adAccounts[0]['id'] : '';
+        // Fetch primary Ad Account ID & Auto-Detect Meta Settings
+        $metaApi = new MetaAPI($longLivedToken, $adAccountId);
+        if (empty($adAccountId)) {
+            $adAccounts = $metaApi->getAdAccounts();
+            $adAccountId = !empty($adAccounts[0]['id']) ? $adAccounts[0]['id'] : '';
+        }
+
+        $metaCurr  = 'INR';
+        $metaCCode = 'IN';
+        $metaCName = 'India';
+        try {
+            $metaMeta = $metaApi->getAccountMetadata();
+            if (!empty($metaMeta['currency'])) {
+                $metaCurr  = $metaMeta['currency'];
+                $metaCCode = $metaMeta['business_country_code'] ?? 'IN';
+                $metaCName = getCountryNameByCode($metaCCode);
+            }
+        } catch (Exception $eMeta) {}
     }
 
     // Encrypt token using AES-256-CBC
@@ -103,10 +117,13 @@ try {
         UPDATE clients
         SET meta_access_token = ?,
             meta_ad_account_id = ?,
-            token_expires_at = ?
+            token_expires_at = ?,
+            currency = ?,
+            country_code = ?,
+            country_name = ?
         WHERE id = ?
     ");
-    $stmt->execute([$encryptedToken, $adAccountId, $expiresAt, $clientId]);
+    $stmt->execute([$encryptedToken, $adAccountId, $expiresAt, $metaCurr, $metaCCode, $metaCName, $clientId]);
 
     logActivity($_SESSION['user_id'], "Connected Meta Ad Account ({$adAccountId}) for client ID {$clientId}");
 
