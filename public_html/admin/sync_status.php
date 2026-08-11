@@ -144,11 +144,11 @@ $csrfToken = generateCsrfToken();
                                         <td class="sync-time"><?= e($c['last_sync'] ? date('d M Y, hh:i A', strtotime($c['last_sync'])) : 'Never') ?></td>
                                         <td class="sync-status">
                                             <?php if ($c['last_status'] === 'success'): ?>
-                                                <span class="badge bg-success bg-opacity-15 text-success border border-success border-opacity-25">Success</span>
+                                                <span class="badge bg-success-subtle text-success"><i class="fa-solid fa-circle-check me-1"></i> Success</span>
                                             <?php elseif ($c['last_status'] === 'error'): ?>
-                                                <span class="badge bg-danger bg-opacity-15 text-danger border border-danger border-opacity-25">Error</span>
+                                                <span class="badge bg-danger-subtle text-danger"><i class="fa-solid fa-circle-xmark me-1"></i> Error</span>
                                             <?php else: ?>
-                                                <span class="badge bg-secondary">Pending</span>
+                                                <span class="badge bg-secondary-subtle text-secondary">Pending</span>
                                             <?php endif; ?>
                                         </td>
                                         <td class="text-end">
@@ -188,12 +188,12 @@ $csrfToken = generateCsrfToken();
                                         <td class="fw-semibold"><?= e($log['business_name']) ?></td>
                                         <td>
                                             <?php if ($log['status'] === 'success'): ?>
-                                                <span class="badge bg-success bg-opacity-15 text-success"><i class="fa-solid fa-check me-1"></i> Success</span>
+                                                <span class="badge bg-success-subtle text-success"><i class="fa-solid fa-check me-1"></i> Success</span>
                                             <?php else: ?>
-                                                <span class="badge bg-danger bg-opacity-15 text-danger"><i class="fa-solid fa-xmark me-1"></i> Failed</span>
+                                                <span class="badge bg-danger-subtle text-danger"><i class="fa-solid fa-xmark me-1"></i> Failed</span>
                                             <?php endif; ?>
                                         </td>
-                                        <td><span class="badge bg-secondary"><?= formatNumber($log['rows_inserted']) ?></span></td>
+                                        <td><span class="badge bg-secondary-subtle text-secondary fw-bold"><?= formatNumber($log['rows_inserted']) ?></span></td>
                                         <td class="small text-danger text-truncate" style="max-width: 280px;" title="<?= e($log['error_message']) ?>">
                                             <?= e($log['error_message'] ?: '—') ?>
                                         </td>

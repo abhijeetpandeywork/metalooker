@@ -183,27 +183,120 @@ h1, h2, h3, h4, h5, h6, .font-heading {
 .admin-sidebar {
     width: 260px;
     min-height: 100vh;
-    background: var(--sidebar-bg);
-    border-right: 1px solid var(--border-subtle);
+    background: #0b1329;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+[data-bs-theme="dark"] .admin-sidebar {
+    background: #030712;
+    border-right-color: rgba(56, 189, 248, 0.15);
 }
 
 .admin-sidebar .nav-link {
     border-radius: 12px;
-    padding: 11px 16px;
+    padding: 12px 18px;
+    font-size: 14px;
     font-weight: 600;
     color: #94a3b8;
-    transition: all 0.2s ease;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .admin-sidebar .nav-link:hover {
     background: rgba(255, 255, 255, 0.08);
     color: #ffffff;
+    transform: translateX(4px);
 }
 
 .admin-sidebar .nav-link.active {
-    background: var(--brand-accent);
-    color: #ffffff;
-    box-shadow: 0 4px 14px var(--brand-alpha);
+    background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+    color: #ffffff !important;
+    box-shadow: 0 4px 18px rgba(2, 132, 199, 0.35);
+    font-weight: 700;
+}
+
+[data-bs-theme="dark"] .admin-sidebar .nav-link.active {
+    background: linear-gradient(135deg, #0284c7 0%, #0284c7 100%);
+    box-shadow: 0 4px 20px rgba(56, 189, 248, 0.4);
+}
+
+/* High Contrast Universal Badge & Box Text Colors */
+.badge {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    padding: 6px 12px;
+    border-radius: 8px;
+}
+
+.bg-success, .badge.bg-success {
+    background-color: #059669 !important;
+    color: #ffffff !important;
+}
+
+.bg-success-subtle, .badge.bg-success-subtle {
+    background-color: rgba(16, 185, 129, 0.14) !important;
+    color: #059669 !important;
+    border: 1px solid rgba(16, 185, 129, 0.3) !important;
+}
+
+[data-bs-theme="dark"] .bg-success-subtle, [data-bs-theme="dark"] .badge.bg-success-subtle {
+    background-color: rgba(52, 211, 153, 0.18) !important;
+    color: #34d399 !important;
+    border-color: rgba(52, 211, 153, 0.35) !important;
+}
+
+.bg-danger, .badge.bg-danger {
+    background-color: #dc2626 !important;
+    color: #ffffff !important;
+}
+
+.bg-danger-subtle, .badge.bg-danger-subtle {
+    background-color: rgba(239, 68, 68, 0.14) !important;
+    color: #dc2626 !important;
+    border: 1px solid rgba(239, 68, 68, 0.3) !important;
+}
+
+[data-bs-theme="dark"] .bg-danger-subtle, [data-bs-theme="dark"] .badge.bg-danger-subtle {
+    background-color: rgba(248, 113, 113, 0.18) !important;
+    color: #f87171 !important;
+    border-color: rgba(248, 113, 113, 0.35) !important;
+}
+
+.bg-warning, .badge.bg-warning {
+    background-color: #d97706 !important;
+    color: #ffffff !important;
+}
+
+.bg-warning-subtle, .badge.bg-warning-subtle {
+    background-color: rgba(245, 158, 11, 0.14) !important;
+    color: #d97706 !important;
+    border: 1px solid rgba(245, 158, 11, 0.3) !important;
+}
+
+[data-bs-theme="dark"] .bg-warning-subtle, [data-bs-theme="dark"] .badge.bg-warning-subtle {
+    background-color: rgba(251, 191, 36, 0.18) !important;
+    color: #fbbf24 !important;
+    border-color: rgba(251, 191, 36, 0.35) !important;
+}
+
+.bg-secondary, .badge.bg-secondary {
+    background-color: #475569 !important;
+    color: #ffffff !important;
+}
+
+.bg-secondary-subtle, .badge.bg-secondary-subtle {
+    background-color: rgba(100, 116, 139, 0.14) !important;
+    color: #475569 !important;
+    border: 1px solid rgba(100, 116, 139, 0.3) !important;
+}
+
+[data-bs-theme="dark"] .bg-secondary-subtle, [data-bs-theme="dark"] .badge.bg-secondary-subtle {
+    background-color: rgba(148, 163, 184, 0.18) !important;
+    color: #cbd5e1 !important;
+    border-color: rgba(148, 163, 184, 0.35) !important;
 }
 
 .admin-content {
