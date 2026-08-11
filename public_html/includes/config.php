@@ -1,22 +1,23 @@
 <?php
 /**
- * Configuration Loader and Initializer
+ * Global Configuration and Constants Loader
  *
- * Loads environment variables from .env file and defines global application constants.
- * Enforces basic security headers and session initialization.
+ * Reads environment variables from .env file and dynamic system_settings database table,
+ * sets PHP runtime configs, defines application constants, and sets up security headers.
  *
  * @package MetaPanel\Includes
  */
 
-// Set strict error reporting for production/dev handling
+// Error Reporting Configuration
 error_reporting(E_ALL);
 ini_set('display_errors', '0');
+ini_set('log_errors', '1');
 
 /**
- * Helper to load environment variables from .env file
+ * Loads key=value pairs from .env file into array.
  *
  * @param string $path Path to .env file
- * @return array Parsed key-value pairs
+ * @return array Key-value map of environment variables
  */
 function loadEnv(string $path): array {
     if (!file_exists($path)) {
@@ -33,7 +34,6 @@ function loadEnv(string $path): array {
             list($key, $value) = explode('=', $line, 2);
             $key = trim($key);
             $value = trim($value);
-            // Strip surrounding quotes if present
             if ((strpos($value, '"') === 0 && substr($value, -1) === '"') ||
                 (strpos($value, "'") === 0 && substr($value, -1) === "'")) {
                 $value = substr($value, 1, -1);
@@ -48,7 +48,7 @@ function loadEnv(string $path): array {
 $rootDir = dirname(__DIR__, 2);
 $envVars = loadEnv($rootDir . '/.env');
 
-// Define constants
+// Define database constants
 define('DB_HOST', $envVars['DB_HOST'] ?? '127.0.0.1');
 define('DB_NAME', $envVars['DB_NAME'] ?? 'metapanel_db');
 define('DB_USER', $envVars['DB_USER'] ?? 'root');
@@ -66,10 +66,17 @@ if (empty($envAppUrl) || str_contains($envAppUrl, 'localhost')) {
 }
 define('AES_KEY', $envVars['AES_KEY'] ?? 'default_insecure_32_character_key!');
 
-define('META_APP_ID', $envVars['META_APP_ID'] ?? '');
-define('META_APP_SECRET', $envVars['META_APP_SECRET'] ?? '');
+// Dynamic Meta API Settings (Database System Settings with .env Fallback)
+require_once __DIR__ . '/db.php';
+
+$metaAppId     = getSystemSetting('meta_app_id', $envVars['META_APP_ID'] ?? '');
+$metaAppSecret = getSystemSetting('meta_app_secret', $envVars['META_APP_SECRET'] ?? '');
+$mockModeVal   = getSystemSetting('mock_meta_api', $envVars['MOCK_META_API'] ?? 'false');
+
+define('META_APP_ID', $metaAppId);
+define('META_APP_SECRET', $metaAppSecret);
 define('META_GRAPH_VERSION', $envVars['META_GRAPH_VERSION'] ?? 'v21.0');
-define('MOCK_META_API', filter_var($envVars['MOCK_META_API'] ?? false, FILTER_VALIDATE_BOOLEAN));
+define('MOCK_META_API', filter_var($mockModeVal, FILTER_VALIDATE_BOOLEAN));
 
 // Security Headers
 if (!headers_sent()) {

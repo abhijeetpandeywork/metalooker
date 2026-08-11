@@ -2,8 +2,8 @@
 /**
  * Database Singleton Helper
  *
- * Provides a thread-safe PDO instance connected to MySQL database with automatic SQLite fallback
- * and auto-migration capability.
+ * Provides a thread-safe PDO instance connected to MySQL database with automatic SQLite fallback,
+ * auto-migration capability, and system settings manager.
  *
  * @package MetaPanel\Includes
  */
@@ -49,6 +49,7 @@ class Database {
                     DB_NAME
                 );
                 self::$instance = new PDO($dsn, DB_USER, DB_PASS, $options);
+                self::ensureTables(self::$instance);
             } catch (PDOException $e) {
                 // 2. Automatic Fallback to Embedded SQLite
                 error_log("MySQL Connection Failed (" . $e->getMessage() . "). Falling back to SQLite.");
@@ -69,10 +70,24 @@ class Database {
     }
 
     /**
-     * Ensures SQLite database tables and seed admin exist.
-     *
-     * @param PDO $pdo SQLite PDO instance
-     * @return void
+     * Ensures MySQL system_settings table exists.
+     */
+    private static function ensureTables(PDO $pdo): void {
+        try {
+            $pdo->exec("
+                CREATE TABLE IF NOT EXISTS system_settings (
+                    setting_key VARCHAR(100) PRIMARY KEY,
+                    setting_value TEXT DEFAULT NULL,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+            ");
+        } catch (Exception $e) {
+            // Ignore if already exists
+        }
+    }
+
+    /**
+     * Ensures SQLite database tables exist.
      */
     private static function ensureSqliteSchema(PDO $pdo): void {
         $check = $pdo->query("SELECT name FROM sqlite_master WHERE type='table' AND name='users'");
@@ -169,6 +184,12 @@ class Database {
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
             );
+
+            CREATE TABLE IF NOT EXISTS system_settings (
+                setting_key TEXT PRIMARY KEY,
+                setting_value TEXT DEFAULT NULL,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
             ";
             $pdo->exec($sqliteSchema);
 
@@ -177,5 +198,41 @@ class Database {
             $seedStmt = $pdo->prepare("INSERT OR IGNORE INTO users (name, email, password_hash, role) VALUES (?, ?, ?, 'super_admin')");
             $seedStmt->execute(['Digital Rubix Admin', 'admin@digitalrubix.com', $adminHash]);
         }
+    }
+}
+
+/**
+ * Gets a global system setting from Database.
+ */
+function getSystemSetting(string $key, ?string $default = null): ?string {
+    try {
+        $db = Database::getInstance();
+        $stmt = $db->prepare("SELECT setting_value FROM system_settings WHERE setting_key = ? LIMIT 1");
+        $stmt->execute([$key]);
+        $row = $stmt->fetch();
+        return ($row && $row['setting_value'] !== null && $row['setting_value'] !== '') ? $row['setting_value'] : $default;
+    } catch (Exception $e) {
+        return $default;
+    }
+}
+
+/**
+ * Sets a global system setting in Database.
+ */
+function setSystemSetting(string $key, string $value): bool {
+    try {
+        $db = Database::getInstance();
+        $driver = $db->getAttribute(PDO::ATTR_DRIVER_NAME);
+        if ($driver === 'sqlite') {
+            $stmt = $db->prepare("INSERT OR REPLACE INTO system_settings (setting_key, setting_value) VALUES (?, ?)");
+        } else {
+            $stmt = $db->prepare("
+                INSERT INTO system_settings (setting_key, setting_value) VALUES (?, ?)
+                ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)
+            ");
+        }
+        return $stmt->execute([$key, $value]);
+    } catch (Exception $e) {
+        return false;
     }
 }
