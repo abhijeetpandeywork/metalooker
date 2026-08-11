@@ -2,7 +2,7 @@
 /**
  * Helper Utility Functions
  *
- * Provides view formatting, currency calculations, date range parsing, and sanitization tools.
+ * Provides view formatting, currency calculations, date range parsing, .env writing, and sanitization tools.
  *
  * @package MetaPanel\Includes
  */
@@ -93,4 +93,26 @@ function getDateRangeBounds(string $preset): array {
     }
 
     return ['start' => $start, 'end' => $end];
+}
+
+/**
+ * Updates a key-value pair in .env file directly on disk.
+ *
+ * @param string $key Environment variable key
+ * @param string $value Environment variable value
+ * @return bool True if updated successfully
+ */
+function updateEnvFile(string $key, string $value): bool {
+    $envPath = dirname(__DIR__, 2) . '/.env';
+    if (!file_exists($envPath)) {
+        return false;
+    }
+    $content = file_get_contents($envPath);
+    $keyPattern = "/^" . preg_quote($key, '/') . "=.*$/m";
+    if (preg_match($keyPattern, $content)) {
+        $content = preg_replace($keyPattern, "{$key}={$value}", $content);
+    } else {
+        $content = rtrim($content) . "\n{$key}={$value}\n";
+    }
+    return file_put_contents($envPath, $content) !== false;
 }

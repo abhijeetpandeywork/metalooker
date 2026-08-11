@@ -28,13 +28,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $appSecret = trim($_POST['meta_app_secret'] ?? '');
         $mockMode  = isset($_POST['mock_meta_api']) ? 'true' : 'false';
 
+        // 1. Save to Database System Settings Table
         setSystemSetting('meta_app_id', $appId);
         setSystemSetting('meta_app_secret', $appSecret);
         setSystemSetting('mock_meta_api', $mockMode);
 
-        logActivity($_SESSION['user_id'], "Updated global Meta App API settings");
+        // 2. Save directly to .env file on disk for persistent fallback
+        updateEnvFile('META_APP_ID', $appId);
+        updateEnvFile('META_APP_SECRET', $appSecret);
+        updateEnvFile('MOCK_META_API', $mockMode);
 
-        header("Location: " . APP_URL . "/admin/settings.php?success=" . urlencode("Global Meta App settings saved successfully. System updated."));
+        logActivity($_SESSION['user_id'], "Updated global Meta App API settings (App ID: {$appId})");
+
+        header("Location: " . APP_URL . "/admin/settings.php?success=" . urlencode("Global Meta App settings saved successfully. System updated and persistent."));
         exit;
     }
 }
@@ -146,8 +152,8 @@ $csrfToken = generateCsrfToken();
                     <div class="card glass-card h-100 shadow-sm">
                         <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center">
                             <h5 class="m-0 font-heading"><i class="fa-brands fa-meta me-2 text-primary"></i> Agency Meta Developer Credentials</h5>
-                            <span class="badge bg-<?= $currentMockMode ? 'warning' : (!empty($currentAppId) ? 'success' : 'danger') ?>">
-                                <?= $currentMockMode ? 'Mock Mode Active' : (!empty($currentAppId) ? 'Live Credentials Configured' : 'Missing App ID') ?>
+                            <span class="badge bg-<?= $currentMockMode ? 'warning' : (!empty($currentAppId) ? 'success' : 'danger') ?> fs-6">
+                                <?= $currentMockMode ? 'Mock Mode Active' : (!empty($currentAppId) ? '✅ Live App Configured (' . e($currentAppId) . ')' : 'Missing App ID') ?>
                             </span>
                         </div>
                         <div class="card-body p-4">
@@ -161,7 +167,7 @@ $csrfToken = generateCsrfToken();
                                             i
                                         </button>
                                     </label>
-                                    <input type="text" id="meta_app_id" name="meta_app_id" class="form-control shadow-sm font-monospace" placeholder="e.g. 123456789012345" value="<?= e($currentAppId) ?>" autocomplete="off" required>
+                                    <input type="text" id="meta_app_id" name="meta_app_id" class="form-control shadow-sm font-monospace" placeholder="e.g. 2118891216178554" value="<?= e($currentAppId) ?>" autocomplete="off" required>
                                 </div>
 
                                 <div class="mb-3">
