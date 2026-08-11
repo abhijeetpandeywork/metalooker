@@ -21,13 +21,53 @@ if (file_exists($cronFile)) require_once $cronFile;
 $syncKey = $_GET['key'] ?? '';
 $isSecretSync = ($syncKey === 'metapanel_sync_2026');
 
-if (!$isSecretSync && (!isLoggedIn() || !in_array($_SESSION['user_role'], ['super_admin', 'team_member'], true))) {
-    echo json_encode(['success' => false, 'error' => 'Unauthorized access.']);
-    exit;
-}
-
 $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
 $clientId = (int)($input['client_id'] ?? $_GET['client_id'] ?? 0);
+
+if (!$isSecretSync) {
+    if (!isLoggedIn()) {
+        echo json_encode(['success' => false, 'error' => 'Unauthorized access. Please sign in to refresh data.']);
+        exit;
+    }
+
+    $userRole = $_SESSION['user_role'] ?? ($_SESSION['role'] ?? '');
+    $userClientId = (int)($_SESSION['client_id'] ?? 0);
+
+    if ($userRole === 'client') {
+        if ($clientId <= 0) {
+            $clientId = $userClientId;
+        }
+        if ($clientId !== $userClientId) {
+            echo json_encode(['success' => false, 'error' => 'Unauthorized access to other client accounts.']);
+            exit;
+        }
+
+        // Enforce 5 manual syncs per day rate limit for clients
+        try {
+            $db = Database::getInstance();
+            $todayStart = date('Y-m-d 00:00:00');
+            $countStmt = $db->prepare("
+                SELECT COUNT(*) as cnt
+                FROM sync_logs
+                WHERE client_id = ? AND synced_at >= ? AND status = 'success'
+            ");
+            $countStmt->execute([$clientId, $todayStart]);
+            $syncCount = (int)($countStmt->fetch()['cnt'] ?? 0);
+            $countStmt->closeCursor();
+
+            if ($syncCount >= 5) {
+                echo json_encode([
+                    'success' => false,
+                    'error'   => 'Daily manual refresh limit reached (Max 5 syncs per day). Next automated refresh will run in a few hours.'
+                ]);
+                exit;
+            }
+        } catch (Exception $eLimit) {}
+    } elseif (!in_array($userRole, ['super_admin', 'team_member'], true)) {
+        echo json_encode(['success' => false, 'error' => 'Unauthorized access.']);
+        exit;
+    }
+}
 
 if ($clientId <= 0) {
     echo json_encode(['success' => false, 'error' => 'Invalid or missing client_id parameter.']);
