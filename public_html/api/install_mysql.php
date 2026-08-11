@@ -110,16 +110,14 @@ try {
         }
     }
 
-    // Seed default clients if clients table is empty
-    $clientCnt = (int)($db->query("SELECT COUNT(*) as cnt FROM clients")->fetch()['cnt'] ?? 0);
-    if ($clientCnt === 0) {
-        // Seed Bagnomy, Sky Line Crest, J Square from local definitions
+    // Seed dashboard_config for all active clients
+    $allClients = $db->query("SELECT id FROM clients")->fetchAll();
+    foreach ($allClients as $cl) {
+        $cId = (int)$cl['id'];
         $db->exec("
-            INSERT INTO clients (id, user_id, business_name, brand_color, currency, meta_ad_account_id, meta_access_token) VALUES
-            (2, 1, 'Bagnomy', '#0F2D55', 'INR', 'act_1067216668798544', 'EAAP9wfZCq1R0BO...'),
-            (3, 1, 'Sky Line Crest', '#1E3A8A', 'INR', 'act_1196144885237722', 'EAAP9wfZCq1R0BO...'),
-            (4, 1, 'J Square', '#0F2D55', 'INR', 'act_567472012903704', 'EAAP9wfZCq1R0BO...')
-            ON DUPLICATE KEY UPDATE business_name=VALUES(business_name);
+            INSERT INTO dashboard_config (client_id, show_spend, show_roas, show_leads, show_cpc, show_ctr, show_impressions, show_campaigns, show_adsets, report_title)
+            VALUES ({$cId}, 1, 1, 1, 1, 1, 1, 1, 1, 'My Ads Performance')
+            ON DUPLICATE KEY UPDATE show_campaigns=1, show_adsets=1, show_spend=1, show_roas=1, show_leads=1, show_cpc=1, show_ctr=1, show_impressions=1;
         ");
     }
 

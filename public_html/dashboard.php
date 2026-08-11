@@ -368,13 +368,11 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
                             <i class="fa-solid fa-layer-group me-1"></i> Campaign Level
                         </button>
                     </li>
-                    <?php if ($client['show_adsets'] ?? 1): ?>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link fw-semibold" id="adsets-tab" data-bs-toggle="tab" data-bs-target="#adsets-pane" type="button" role="tab">
-                                <i class="fa-solid fa-cubes me-1"></i> Ad Sets Level
-                            </button>
-                        </li>
-                    <?php endif; ?>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-semibold" id="adsets-tab" data-bs-toggle="tab" data-bs-target="#adsets-pane" type="button" role="tab">
+                            <i class="fa-solid fa-cubes me-1"></i> Ad Sets Level
+                        </button>
+                    </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link fw-semibold" id="ads-tab" data-bs-toggle="tab" data-bs-target="#ads-pane" type="button" role="tab">
                             <i class="fa-solid fa-rectangle-ad me-1"></i> Ads Level
@@ -419,33 +417,32 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
                     </div>
 
                     <!-- Adsets Pane -->
-                    <?php if ($client['show_adsets'] ?? 1): ?>
-                        <div class="tab-pane fade p-3" id="adsets-pane" role="tabpanel">
-                            <div class="table-responsive">
-                                <table class="table table-hover align-middle mb-0">
-                                    <thead>
-                                        <tr>
-                                            <th>Ad Set Name</th>
-                                            <?php if ($client['show_impressions'] ?? 1): ?><th>Reach</th><?php endif; ?>
-                                            <?php if ($client['show_impressions'] ?? 1): ?><th>Impressions</th><?php endif; ?>
-                                            <?php if ($client['show_impressions'] ?? 1): ?><th>Frequency</th><?php endif; ?>
-                                            <th>Clicks</th>
-                                            <?php if ($client['show_ctr'] ?? 1): ?><th>CTR</th><?php endif; ?>
-                                            <?php if ($client['show_cpc'] ?? 1): ?><th>CPC</th><?php endif; ?>
-                                            <?php if ($client['show_impressions'] ?? 1): ?><th>CPM</th><?php endif; ?>
-                                            <?php if ($client['show_spend'] ?? 1): ?><th>Spend</th><?php endif; ?>
-                                            <?php if ($client['show_leads'] ?? 1): ?><th>Results</th><?php endif; ?>
-                                            <?php if ($client['show_leads'] ?? 1): ?><th>CPR</th><?php endif; ?>
-                                            <?php if ($client['show_roas'] ?? 1): ?><th>ROAS</th><?php endif; ?>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="adsets-table-body">
-                                        <tr><td colspan="12" class="text-center text-muted py-4">Loading ad set data...</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
+                    <!-- Adsets Pane -->
+                    <div class="tab-pane fade p-3" id="adsets-pane" role="tabpanel">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Ad Set Name</th>
+                                        <?php if ($client['show_impressions'] ?? 1): ?><th>Reach</th><?php endif; ?>
+                                        <?php if ($client['show_impressions'] ?? 1): ?><th>Impressions</th><?php endif; ?>
+                                        <?php if ($client['show_impressions'] ?? 1): ?><th>Frequency</th><?php endif; ?>
+                                        <th>Clicks</th>
+                                        <?php if ($client['show_ctr'] ?? 1): ?><th>CTR</th><?php endif; ?>
+                                        <?php if ($client['show_cpc'] ?? 1): ?><th>CPC</th><?php endif; ?>
+                                        <?php if ($client['show_impressions'] ?? 1): ?><th>CPM</th><?php endif; ?>
+                                        <?php if ($client['show_spend'] ?? 1): ?><th>Spend</th><?php endif; ?>
+                                        <?php if ($client['show_leads'] ?? 1): ?><th>Results</th><?php endif; ?>
+                                        <?php if ($client['show_leads'] ?? 1): ?><th>CPR</th><?php endif; ?>
+                                        <?php if ($client['show_roas'] ?? 1): ?><th>ROAS</th><?php endif; ?>
+                                    </tr>
+                                </thead>
+                                <tbody id="adsets-table-body">
+                                    <tr><td colspan="12" class="text-center text-muted py-4">Loading ad set data...</td></tr>
+                                </tbody>
+                            </table>
                         </div>
-                    <?php endif; ?>
+                    </div>
 
                     <!-- Ads Pane -->
                     <div class="tab-pane fade p-3" id="ads-pane" role="tabpanel">
