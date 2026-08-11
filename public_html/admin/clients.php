@@ -74,7 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 // Handle Client Status Toggle (Pause / Enable)
 if (isset($_GET['toggle_id'])) {
     $toggleId = (int)$_GET['toggle_id'];
-    $stmt = $db->prepare("UPDATE clients SET active = IF(active=1, 0, 1) WHERE id = ?");
+    $stmt = $db->prepare("UPDATE clients SET active = CASE WHEN active = 1 THEN 0 ELSE 1 END WHERE id = ?");
     $stmt->execute([$toggleId]);
     logActivity($_SESSION['user_id'], "Toggled active status for client ID {$toggleId}");
     header("Location: " . APP_URL . "/admin/clients.php?success=" . urlencode("Client account status updated."));
@@ -151,7 +151,7 @@ $csrfToken = generateCsrfToken();
                         <i class="fa-solid fa-building-user me-2"></i> Client Directory
                     </a>
                 </li>
-                <?php if ($_SESSION['role'] === 'super_admin'): ?>
+                <?php if (isSuperAdmin()): ?>
                     <li class="nav-item mb-1">
                         <a href="<?= APP_URL ?>/admin/team.php" class="nav-link">
                             <i class="fa-solid fa-users me-2"></i> Team Access

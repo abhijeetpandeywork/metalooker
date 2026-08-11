@@ -104,7 +104,7 @@ $activeClients = $clientsStmt->fetchAll();
                         <i class="fa-solid fa-building-user me-2"></i> Client Directory
                     </a>
                 </li>
-                <?php if ($role === 'super_admin'): ?>
+                <?php if (isSuperAdmin()): ?>
                     <li class="nav-item mb-1">
                         <a href="<?= APP_URL ?>/admin/team.php" class="nav-link">
                             <i class="fa-solid fa-users me-2"></i> Team Access

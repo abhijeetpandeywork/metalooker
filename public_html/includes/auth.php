@@ -37,10 +37,11 @@ function login(string $email, string $password): array {
         if ($user && password_verify($password, $user['password_hash'])) {
             session_regenerate_id(true);
 
-            $_SESSION['user_id']   = (int)$user['id'];
-            $_SESSION['user_name'] = $user['name'];
+            $_SESSION['user_id']    = (int)$user['id'];
+            $_SESSION['user_name']  = $user['name'];
             $_SESSION['user_email'] = $user['email'];
-            $_SESSION['user_role'] = $user['role'];
+            $_SESSION['user_role']  = $user['role'];
+            $_SESSION['role']       = $user['role']; // Legacy alias for backward compatibility
             $_SESSION['login_time'] = time();
 
             // If user is a client, fetch their associated client_id
@@ -107,7 +108,7 @@ function logout(): void {
  * @return bool
  */
 function isLoggedIn(): bool {
-    if (empty($_SESSION['user_id']) || empty($_SESSION['user_role'])) {
+    if (empty($_SESSION['user_id']) || (empty($_SESSION['user_role']) && empty($_SESSION['role']))) {
         return false;
     }
 
@@ -119,6 +120,16 @@ function isLoggedIn(): bool {
     }
 
     return true;
+}
+
+/**
+ * Checks if logged-in user is Super Admin.
+ *
+ * @return bool
+ */
+function isSuperAdmin(): bool {
+    $role = $_SESSION['user_role'] ?? ($_SESSION['role'] ?? '');
+    return $role === 'super_admin';
 }
 
 /**
@@ -134,7 +145,8 @@ function requireRole($allowedRoles): void {
     }
 
     $roles = is_array($allowedRoles) ? $allowedRoles : [$allowedRoles];
-    if (!in_array($_SESSION['user_role'], $roles, true)) {
+    $currentRole = $_SESSION['user_role'] ?? ($_SESSION['role'] ?? '');
+    if (!in_array($currentRole, $roles, true)) {
         header("Location: " . APP_URL . "/login.php?error=unauthorized");
         exit;
     }
@@ -177,30 +189,24 @@ function checkBruteForce(string $ip): bool {
         $row = $stmt->fetch();
         return ($row['attempts'] ?? 0) < 5;
     } catch (Exception $e) {
-        return true; // Fallback to allowed on DB error
+        return true;
     }
 }
 
 /**
- * Records a failed login attempt for rate limiting.
+ * Records a failed login attempt in activity_log.
  *
  * @param string $ip Client IP address
  * @return void
  */
 function recordFailedLogin(string $ip): void {
-    try {
-        $db = Database::getInstance();
-        $stmt = $db->prepare("INSERT INTO activity_log (user_id, action, ip) VALUES (NULL, 'Failed login attempt', ?)");
-        $stmt->execute([$ip]);
-    } catch (Exception $e) {
-        error_log("Failed to record failed login: " . $e->getMessage());
-    }
+    logActivity(null, "Failed login attempt");
 }
 
 /**
- * Generates or retrieves a CSRF token for the active session.
+ * Generates a CSRF token stored in session.
  *
- * @return string CSRF token hex string
+ * @return string CSRF token
  */
 function generateCsrfToken(): string {
     if (empty($_SESSION['csrf_token'])) {
@@ -210,12 +216,12 @@ function generateCsrfToken(): string {
 }
 
 /**
- * Validates a submitted CSRF token against session token.
+ * Validates submitted CSRF token against session token.
  *
- * @param string|null $token Submitted CSRF token
- * @return bool True if valid, false otherwise
+ * @param string $token Submitted token
+ * @return bool True if valid
  */
-function verifyCsrfToken(?string $token): bool {
+function verifyCsrfToken(string $token): bool {
     if (empty($_SESSION['csrf_token']) || empty($token)) {
         return false;
     }

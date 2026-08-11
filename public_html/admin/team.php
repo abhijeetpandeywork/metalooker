@@ -132,16 +132,18 @@ $csrfToken = generateCsrfToken();
                         <i class="fa-solid fa-building-user me-2"></i> Client Directory
                     </a>
                 </li>
-                <li class="nav-item mb-1">
-                    <a href="<?= APP_URL ?>/admin/team.php" class="nav-link active">
-                        <i class="fa-solid fa-users me-2"></i> Team Access
-                    </a>
-                </li>
-                <li class="nav-item mb-1">
-                    <a href="<?= APP_URL ?>/admin/settings.php" class="nav-link">
-                        <i class="fa-solid fa-gears me-2"></i> Meta App Settings
-                    </a>
-                </li>
+                <?php if (isSuperAdmin()): ?>
+                    <li class="nav-item mb-1">
+                        <a href="<?= APP_URL ?>/admin/team.php" class="nav-link active">
+                            <i class="fa-solid fa-users me-2"></i> Team Access
+                        </a>
+                    </li>
+                    <li class="nav-item mb-1">
+                        <a href="<?= APP_URL ?>/admin/settings.php" class="nav-link">
+                            <i class="fa-solid fa-gears me-2"></i> Meta App Settings
+                        </a>
+                    </li>
+                <?php endif; ?>
                 <li class="nav-item mb-1">
                     <a href="<?= APP_URL ?>/admin/sync_status.php" class="nav-link">
                         <i class="fa-solid fa-arrows-rotate me-2"></i> Cron Sync Status
