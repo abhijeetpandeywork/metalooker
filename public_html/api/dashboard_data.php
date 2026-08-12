@@ -381,6 +381,8 @@ try {
         $row['cpr']         = $cnv > 0 ? round($spd / $cnv, 2) : 0.0;
         $row['roas']        = round((float)$row['roas'], 2);
         return $row;
+    }, $adStmt->fetchAll());
+
     // Live Meta Graph API Direct Verification & Overlay Engine (Matches Meta Ads Manager 100% 1:1)
     $plainToken = TokenManager::decrypt($client['meta_access_token'] ?? '');
     $rawAdAccountId = trim($client['meta_ad_account_id'] ?? '');
