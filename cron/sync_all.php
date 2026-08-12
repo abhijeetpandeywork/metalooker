@@ -189,8 +189,21 @@ function syncClientData(array $client): array {
                     if (isset($row['conversions']) && is_numeric($row['conversions'])) {
                         $conversions = (int)$row['conversions'];
                     } elseif (isset($row['actions']) && is_array($row['actions'])) {
-                        // Prioritized matching sequence to extract only the primary campaign target event
-                        $priorityActions = [
+                        // Detect if campaign is dedicated to WhatsApp / Messaging
+                        $isMessagingCampaign = (stripos($objectName, 'WA') !== false || stripos($objectName, 'message') !== false || stripos($objectName, 'chat') !== false);
+
+                        $priorityActions = $isMessagingCampaign ? [
+                            'onsite_conversion.messaging_conversation_started_7d',
+                            'purchase',
+                            'omni_purchase',
+                            'lead',
+                            'complete_registration',
+                            'submit_application',
+                            'contact',
+                            'schedule',
+                            'subscribe',
+                            'landing_page_view'
+                        ] : [
                             'purchase',
                             'omni_purchase',
                             'lead',
