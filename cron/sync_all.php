@@ -189,32 +189,44 @@ function syncClientData(array $client): array {
                     if (isset($row['conversions']) && is_numeric($row['conversions'])) {
                         $conversions = (int)$row['conversions'];
                     } elseif (isset($row['actions']) && is_array($row['actions'])) {
+                        // Prioritized matching sequence to extract only the primary campaign target event
                         $priorityActions = [
-                            'lead',
                             'purchase',
                             'omni_purchase',
+                            'lead',
                             'onsite_conversion.messaging_conversation_started_7d',
-                            'contact',
                             'complete_registration',
-                            'schedule',
                             'submit_application',
+                            'contact',
+                            'schedule',
                             'subscribe',
                             'landing_page_view'
                         ];
-                        foreach ($row['actions'] as $act) {
-                            $type = $act['action_type'] ?? '';
-                            $val  = (int)($act['value'] ?? 0);
-                            if (in_array($type, $priorityActions, true)) {
-                                $conversions += $val;
-                            }
-                        }
-                        if ($conversions === 0) {
+                        foreach ($priorityActions as $targetAction) {
                             foreach ($row['actions'] as $act) {
                                 $type = $act['action_type'] ?? '';
-                                if (str_contains($type, 'conversion') || str_contains($type, 'lead') || str_contains($type, 'purchase') || str_contains($type, 'messaging')) {
-                                    $conversions += (int)($act['value'] ?? 0);
+                                if ($type === $targetAction) {
+                                    $conversions = (int)($act['value'] ?? 0);
+                                    break 2; // Found primary metric, stop parsing
                                 }
                             }
+                        }
+                        // Fallback: if no priority action was found, check for keyword matches
+                        if ($conversions === 0) {
+                            $fallbackKeywords = ['purchase', 'lead', 'conversion', 'messaging'];
+                            foreach ($fallbackKeywords as $keyword) {
+                                foreach ($row['actions'] as $act) {
+                                    $type = $act['action_type'] ?? '';
+                                    if (str_contains($type, $keyword)) {
+                                        $conversions = (int)($act['value'] ?? 0);
+                                        break 2;
+                                    }
+                                }
+                            }
+                        }
+                        // Last resort fallback
+                        if ($conversions === 0 && !empty($row['actions'])) {
+                            $conversions = (int)($row['actions'][0]['value'] ?? 0);
                         }
                     }
 

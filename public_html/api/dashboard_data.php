@@ -106,6 +106,11 @@ if (empty($from) || empty($to)) {
     $to   = $bounds['end'];
 }
 
+$startDate = new DateTime($from);
+$endDate   = new DateTime($to);
+$N = $startDate->diff($endDate)->days + 1;
+if ($N < 1) $N = 1;
+
 try {
     // 1. Aggregated Key Performance Indicators (Current Period)
     $kpiStmt = $db->prepare("
@@ -124,11 +129,17 @@ try {
     $kpisRaw = $kpiStmt->fetch();
 
     $impressions = (int)($kpisRaw['impressions'] ?? 0);
-    $reach       = (int)($kpisRaw['reach'] ?? 0);
+    $reachRaw    = (int)($kpisRaw['reach'] ?? 0);
     $clicks      = (int)($kpisRaw['clicks'] ?? 0);
     $spend       = (float)($kpisRaw['spend'] ?? 0.0);
     $conversions = (int)($kpisRaw['conversions'] ?? 0);
     $avgRoas     = (float)($kpisRaw['avg_roas'] ?? 0.0);
+
+    // Apply power-law overlap factor to estimate unique reach and frequency accurately
+    $dailyFreq   = $reachRaw > 0 ? ($impressions / $reachRaw) : 1.0;
+    $estFreq     = 1.0 + ($dailyFreq - 1.0) * pow($N, 0.45);
+    $estFreq     = max(1.0, min($estFreq, $impressions));
+    $reach       = $estFreq > 0 ? (int)round($impressions / $estFreq) : 0;
 
     $ctr = $impressions > 0 ? round(($clicks / $impressions) * 100, 2) : 0.0;
     $cpc = $clicks > 0 ? round($spend / $clicks, 2) : 0.0;
@@ -168,10 +179,16 @@ try {
 
     $prevSpend       = (float)($prevRaw['spend'] ?? 0.0);
     $prevImpressions = (int)($prevRaw['impressions'] ?? 0);
-    $prevReach       = (int)($prevRaw['reach'] ?? 0);
+    $prevReachRaw    = (int)($prevRaw['reach'] ?? 0);
     $prevClicks      = (int)($prevRaw['clicks'] ?? 0);
     $prevConversions = (int)($prevRaw['conversions'] ?? 0);
     $prevAvgRoas     = (float)($prevRaw['avg_roas'] ?? 0.0);
+
+    // Apply power-law overlap factor to estimate unique reach and frequency for comparison period
+    $prevDailyFreq   = $prevReachRaw > 0 ? ($prevImpressions / $prevReachRaw) : 1.0;
+    $prevEstFreq     = 1.0 + ($prevDailyFreq - 1.0) * pow($N, 0.45);
+    $prevEstFreq     = max(1.0, min($prevEstFreq, $prevImpressions));
+    $prevReach       = $prevEstFreq > 0 ? (int)round($prevImpressions / $prevEstFreq) : 0;
 
     $prevCtr  = $prevImpressions > 0 ? round(($prevClicks / $prevImpressions) * 100, 2) : 0.0;
     $prevCpc  = $prevClicks > 0 ? round($prevSpend / $prevClicks, 2) : 0.0;
@@ -261,15 +278,21 @@ try {
         ORDER BY spend DESC
     ");
     $cmpStmt->execute([$clientId, $from, $to]);
-    $campaigns = array_map(function($row) {
+    $campaigns = array_map(function($row) use ($N) {
         $imp = (int)$row['impressions'];
-        $rch = (int)$row['reach'];
+        $rchRaw = (int)$row['reach'];
         $clk = (int)$row['clicks'];
         $spd = (float)$row['spend'];
         $cnv = (int)$row['conversions'];
 
-        $row['reach']       = $rch;
-        $row['frequency']   = $rch > 0 ? round($imp / $rch, 2) : 1.0;
+        // Apply power-law overlap scaling factor to estimate reach and frequency
+        $dailyFreq = $rchRaw > 0 ? ($imp / $rchRaw) : 1.0;
+        $estFreq = 1.0 + ($dailyFreq - 1.0) * pow($N, 0.45);
+        $estFreq = max(1.0, min($estFreq, $imp));
+        $estReach = $estFreq > 0 ? (int)round($imp / $estFreq) : 0;
+
+        $row['reach']       = $estReach;
+        $row['frequency']   = $estReach > 0 ? round($imp / $estReach, 2) : 1.0;
         $row['ctr']         = $imp > 0 ? round(($clk / $imp) * 100, 2) : 0.0;
         $row['cpc']         = $clk > 0 ? round($spd / $clk, 2) : 0.0;
         $row['cpm']         = $imp > 0 ? round(($spd / $imp) * 1000, 2) : 0.0;
@@ -296,15 +319,20 @@ try {
         ORDER BY spend DESC
     ");
     $adsetStmt->execute([$clientId, $from, $to]);
-    $adsets = array_map(function($row) {
+    $adsets = array_map(function($row) use ($N) {
         $imp = (int)$row['impressions'];
-        $rch = (int)$row['reach'];
+        $rchRaw = (int)$row['reach'];
         $clk = (int)$row['clicks'];
         $spd = (float)$row['spend'];
         $cnv = (int)$row['conversions'];
 
-        $row['reach']       = $rch;
-        $row['frequency']   = $rch > 0 ? round($imp / $rch, 2) : 1.0;
+        $dailyFreq = $rchRaw > 0 ? ($imp / $rchRaw) : 1.0;
+        $estFreq = 1.0 + ($dailyFreq - 1.0) * pow($N, 0.45);
+        $estFreq = max(1.0, min($estFreq, $imp));
+        $estReach = $estFreq > 0 ? (int)round($imp / $estFreq) : 0;
+
+        $row['reach']       = $estReach;
+        $row['frequency']   = $estReach > 0 ? round($imp / $estReach, 2) : 1.0;
         $row['ctr']         = $imp > 0 ? round(($clk / $imp) * 100, 2) : 0.0;
         $row['cpc']         = $clk > 0 ? round($spd / $clk, 2) : 0.0;
         $row['cpm']         = $imp > 0 ? round(($spd / $imp) * 1000, 2) : 0.0;
@@ -331,15 +359,20 @@ try {
         ORDER BY spend DESC
     ");
     $adStmt->execute([$clientId, $from, $to]);
-    $ads = array_map(function($row) {
+    $ads = array_map(function($row) use ($N) {
         $imp = (int)$row['impressions'];
-        $rch = (int)$row['reach'];
+        $rchRaw = (int)$row['reach'];
         $clk = (int)$row['clicks'];
         $spd = (float)$row['spend'];
         $cnv = (int)$row['conversions'];
 
-        $row['reach']       = $rch;
-        $row['frequency']   = $rch > 0 ? round($imp / $rch, 2) : 1.0;
+        $dailyFreq = $rchRaw > 0 ? ($imp / $rchRaw) : 1.0;
+        $estFreq = 1.0 + ($dailyFreq - 1.0) * pow($N, 0.45);
+        $estFreq = max(1.0, min($estFreq, $imp));
+        $estReach = $estFreq > 0 ? (int)round($imp / $estFreq) : 0;
+
+        $row['reach']       = $estReach;
+        $row['frequency']   = $estReach > 0 ? round($imp / $estReach, 2) : 1.0;
         $row['ctr']         = $imp > 0 ? round(($clk / $imp) * 100, 2) : 0.0;
         $row['cpc']         = $clk > 0 ? round($spd / $clk, 2) : 0.0;
         $row['cpm']         = $imp > 0 ? round(($spd / $imp) * 1000, 2) : 0.0;
