@@ -28,6 +28,8 @@ const filesToDeploy = [
     'public_html/index.php',
     'public_html/login.php',
     'public_html/logout.php',
+    'public_html/change_password.php',
+    'public_html/forgot_password.php',
     'public_html/dashboard.php',
     'public_html/oauth_callback.php',
     'public_html/admin/index.php',
