@@ -69,6 +69,7 @@ define('DB_PASS', $envVars['DB_PASS'] ?? '');
 define('DB_PORT', $envVars['DB_PORT'] ?? '3306');
 
 define('APP_ENV', $envVars['APP_ENV'] ?? 'production');
+define('APP_NAME', 'Digital Rubix — MetaPanel');
 $envAppUrl = rtrim($envVars['APP_URL'] ?? '', '/');
 if (empty($envAppUrl) || str_contains($envAppUrl, 'localhost')) {
     $scheme = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http';

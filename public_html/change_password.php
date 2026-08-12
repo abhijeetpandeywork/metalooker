@@ -72,7 +72,7 @@ $backUrl = ($userRole === 'super_admin' || $userRole === 'team_member')
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Change Password — <?= e(APP_NAME) ?></title>
+    <title>Change Password — Digital Rubix MetaPanel</title>
     <script>
         (function() {
             var t = localStorage.getItem('metapanel_theme') || 'light';
