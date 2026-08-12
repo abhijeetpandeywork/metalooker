@@ -107,10 +107,7 @@ $csrfToken = generateCsrfToken();
                 </div>
 
                 <div class="mb-4">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <label for="password" class="form-label text-muted small fw-semibold mb-0">Password</label>
-                        <a href="<?= APP_URL ?>/forgot_password.php" class="text-decoration-none small text-primary fw-medium">Forgot Password?</a>
-                    </div>
+                    <label for="password" class="form-label text-muted small fw-semibold">Password</label>
                     <div class="input-group shadow-sm">
                         <span class="input-group-text"><i class="fa-solid fa-lock"></i></span>
                         <input type="password" class="form-control" id="password" name="password" placeholder="••••••••" required autocomplete="current-password">
