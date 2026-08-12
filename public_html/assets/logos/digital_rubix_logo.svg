@@ -1,20 +1,26 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 450 120" width="450" height="120">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 450 140" width="450" height="140">
   <defs>
-    <linearGradient id="rubixGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#38bdf8" />
-      <stop offset="100%" stop-color="#0284c7" />
-    </linearGradient>
     <style>
-      .brand-title { font-family: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif; font-weight: 800; fill: #ffffff; font-size: 42px; letter-spacing: -0.5px; }
-      .brand-sub { font-family: 'Inter', system-ui, sans-serif; font-weight: 700; fill: #38bdf8; letter-spacing: 5px; font-size: 13px; text-transform: uppercase; }
-      .hash-icon { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; font-weight: 900; fill: url(#rubixGrad); font-size: 85px; }
+      .serif-text { font-family: 'Playfair Display', 'Georgia', 'Times New Roman', serif; font-weight: 700; fill: #111827; }
+      .sans-text { font-family: 'Inter', 'Arial', sans-serif; font-weight: 700; fill: #ffffff; letter-spacing: 4px; font-size: 16px; }
+      .hashtag { font-family: 'Inter', 'Arial', sans-serif; font-weight: 800; fill: #4b83c4; font-size: 85px; }
     </style>
   </defs>
-
-  <!-- Hashtag Icon -->
-  <text x="10" y="90" class="hash-icon">#</text>
   
-  <!-- Digital Rubix Branding -->
-  <text x="90" y="58" class="brand-title">Digital Rubix</text>
-  <text x="94" y="94" class="brand-sub">META ADS AGENCY</text>
+  <!-- White upper border -->
+  <rect x="0" y="0" width="450" height="25" fill="#ffffff" />
+  
+  <!-- Grey middle stripe -->
+  <rect x="0" y="25" width="450" height="85" fill="#cbd5e1" />
+  
+  <!-- Hashtag symbol -->
+  <text x="65" y="96" class="hashtag">#</text>
+  
+  <!-- Digital Rubix Text -->
+  <text x="165" y="62" class="serif-text" font-size="44">Digital</text>
+  <text x="175" y="102" class="serif-text" font-size="44">Rubix</text>
+  
+  <!-- Black footer bar -->
+  <rect x="0" y="110" width="450" height="30" fill="#000000" />
+  <text x="225" y="130" class="sans-text" text-anchor="middle">MARKETING EXPERT</text>
 </svg>
