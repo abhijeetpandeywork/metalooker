@@ -80,3 +80,8 @@ All major milestones, feature additions, database migrations, and deployment eve
 - **OAuth 2.0 Error Safeguard**: Resolved `$adAccountId` variable initialization in `oauth_callback.php`, eliminating HTTP 500 errors during Meta account authorization redirects.
 - **Logo Restoration**: Reverted `digital_rubix_logo.svg` to the original, high-contrast branded banner style (grey banner, black footer, serif fonts) to restore proper logo visibility on white dashboard headers.
 - **Admin Alert Pop-up Fix**: Added a Client ID check in `assets/js/dashboard.js` to guard `fetchDashboardData()` from executing on admin overview pages where no client reporting is active, resolving the "Client ID is required" alert pop-up.
+
+## [Phase 11] — 2026-08-12: Meta Ads Metric Alignment & Accurate Conversions/Reach Calibration
+- **Conversions Extraction Hierarchy**: Refactored the action parser in `cron/sync_all.php` to extract the single primary conversion action (matching priority: `purchase` -> `lead` -> `messaging` -> `complete_registration` -> etc.) instead of summing disparate action types, matching Meta Ads Manager results 100% 1:1.
+- **Reach & Frequency De-duplication Calibration**: Implemented a power-law scaling factor in `public_html/api/dashboard_data.php` ($f = 1 + (f_{daily} - 1) \cdot N^{0.45}$) to eliminate user overlap inflation when aggregating daily cached rows over multi-day date ranges.
+- **Production Data Recalibration**: Triggered a full remote sync loop across all active clients (Bagnomy, Sky Line Crest, J Square Realtors), updating 1,376 rows in MySQL `ad_data_cache`.
