@@ -121,6 +121,9 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
     </style>
 </head>
 <body>
+    <!-- Top Viewport Progress Loader Bar -->
+    <div id="top-progress-bar"></div>
+
     <!-- Client Top Header Bar -->
     <header class="client-dashboard-header d-flex flex-wrap justify-content-between align-items-center mb-4">
         <div class="d-flex align-items-center mb-2 mb-md-0">

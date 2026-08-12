@@ -456,3 +456,69 @@ h1, h2, h3, h4, h5, h6, .font-heading {
         display: none !important;
     }
 }
+
+/* ==========================================================================
+   World-Class Responsiveness & Visual Loader Engine
+   ========================================================================== */
+
+/* Top Viewport Progress Loader Bar */
+#top-progress-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 0%;
+    height: 3.5px;
+    background: linear-gradient(90deg, #0d6efd, #0dcaf0, #6610f2, #38bdf8);
+    background-size: 200% 100%;
+    z-index: 999999;
+    box-shadow: 0 0 12px rgba(13, 202, 240, 0.8);
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease;
+    animation: gradientSlide 1.5s infinite linear;
+}
+
+@keyframes gradientSlide {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* Glassmorphic Shimmer Overlay for Cards & Charts */
+.loading-pulse {
+    position: relative !important;
+    pointer-events: none !important;
+}
+
+.loading-pulse::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.45) 50%, rgba(255,255,255,0) 100%);
+    background-size: 200% 100%;
+    animation: shimmerPulse 1.2s infinite ease-in-out;
+    border-radius: inherit;
+    z-index: 10;
+    pointer-events: none;
+}
+
+[data-bs-theme="dark"] .loading-pulse::after {
+    background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.12) 50%, rgba(255,255,255,0) 100%);
+}
+
+@keyframes shimmerPulse {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+/* Smooth Fade-In Animation when Data Loads */
+.data-fade-in {
+    animation: fadeInSmooth 0.35s ease-out forwards;
+}
+
+@keyframes fadeInSmooth {
+    from { opacity: 0.3; transform: translateY(2px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+

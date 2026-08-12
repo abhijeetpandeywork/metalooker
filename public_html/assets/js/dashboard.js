@@ -176,10 +176,87 @@ document.addEventListener('DOMContentLoaded', function() {
     let dailySeriesBCache = [];
 
     /**
+     * Shows sleek visual loading state across viewport, cards, and tables
+     */
+    function showLoadingState() {
+        // 1. Top progress loader bar
+        let topBar = document.getElementById('top-progress-bar');
+        if (!topBar) {
+            topBar = document.createElement('div');
+            topBar.id = 'top-progress-bar';
+            document.body.prepend(topBar);
+        }
+        topBar.style.opacity = '1';
+        topBar.style.width = '35%';
+
+        if (window.topBarInterval) clearInterval(window.topBarInterval);
+        window.topBarInterval = setInterval(() => {
+            let curWidth = parseFloat(topBar.style.width) || 35;
+            if (curWidth < 88) {
+                topBar.style.width = (curWidth + Math.random() * 7) + '%';
+            }
+        }, 120);
+
+        // 2. Add shimmer loading pulse to cards & chart containers
+        document.querySelectorAll('.card.glass-card').forEach(card => {
+            card.classList.add('loading-pulse');
+        });
+
+        // 3. Dim KPI values for clear feedback
+        document.querySelectorAll('.kpi-value').forEach(el => {
+            el.style.opacity = '0.35';
+        });
+
+        // 4. Dim breakdown tables
+        ['campaigns-table-body', 'adsets-table-body', 'ads-table-body'].forEach(id => {
+            const tbody = document.getElementById(id);
+            if (tbody) tbody.style.opacity = '0.4';
+        });
+    }
+
+    /**
+     * Hides loading state and triggers smooth fade-in
+     */
+    function hideLoadingState() {
+        // 1. Fill top progress bar and fade out
+        let topBar = document.getElementById('top-progress-bar');
+        if (window.topBarInterval) clearInterval(window.topBarInterval);
+        if (topBar) {
+            topBar.style.width = '100%';
+            setTimeout(() => {
+                topBar.style.opacity = '0';
+                setTimeout(() => { topBar.style.width = '0%'; }, 350);
+            }, 200);
+        }
+
+        // 2. Remove loading pulse from cards
+        document.querySelectorAll('.card.glass-card').forEach(card => {
+            card.classList.remove('loading-pulse');
+            card.classList.remove('data-fade-in');
+            void card.offsetWidth; // Trigger reflow
+            card.classList.add('data-fade-in');
+        });
+
+        // 3. Restore opacity on KPI values
+        document.querySelectorAll('.kpi-value').forEach(el => {
+            el.style.opacity = '1';
+        });
+
+        // 4. Restore tables opacity
+        ['campaigns-table-body', 'adsets-table-body', 'ads-table-body'].forEach(id => {
+            const tbody = document.getElementById(id);
+            if (tbody) tbody.style.opacity = '1';
+        });
+    }
+
+    /**
      * Fetches analytics payload from backend API
      */
     function fetchDashboardData(cId, from, to, compFrom = '', compTo = '') {
         if (!cId) return; // Guard against empty client ID
+        
+        showLoadingState();
+
         let url = `${window.APP_URL}/api/dashboard_data.php?client_id=${cId}&from=${from}&to=${to}`;
         if (compFrom && compTo) {
             url += `&compare_from=${compFrom}&compare_to=${compTo}`;
@@ -188,6 +265,7 @@ document.addEventListener('DOMContentLoaded', function() {
         fetch(url)
             .then(response => response.json())
             .then(data => {
+                hideLoadingState();
                 if (data.error) {
                     alert('Notice: ' + data.error);
                     return;
@@ -208,6 +286,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 initInfoPopovers();
             })
             .catch(err => {
+                hideLoadingState();
                 console.error('Failed to load dashboard data:', err);
             });
     }
