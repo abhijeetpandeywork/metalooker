@@ -155,6 +155,18 @@ function isSuperAdmin(): bool {
 }
 
 /**
+ * Ensures user is authenticated; otherwise redirects to login portal.
+ *
+ * @return void
+ */
+function requireAuth(): void {
+    if (!isLoggedIn()) {
+        header("Location: " . APP_URL . "/login.php");
+        exit;
+    }
+}
+
+/**
  * Requires user to have a specific role or set of roles; otherwise redirects to login.
  *
  * @param string|array $allowedRoles Single role string or array of allowed roles
