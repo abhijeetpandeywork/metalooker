@@ -168,6 +168,11 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
                 </a>
             <?php endif; ?>
 
+            <!-- Change Password Link -->
+            <a href="<?= APP_URL ?>/change_password.php" class="btn btn-sm btn-outline-secondary shadow-sm" title="Change Password">
+                <i class="fa-solid fa-key me-1"></i> Change Password
+            </a>
+
             <a href="<?= APP_URL ?>/logout.php" class="btn btn-sm btn-outline-secondary shadow-sm" title="Sign Out">
                 <i class="fa-solid fa-power-off"></i>
             </a>

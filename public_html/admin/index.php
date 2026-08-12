@@ -151,7 +151,9 @@ $activeClients = $clientsStmt->fetchAll();
                     <strong><?= e($_SESSION['user_name']) ?></strong>
                 </a>
                 <ul class="dropdown-menu dropdown-menu-dark shadow">
-                    <li><a class="dropdown-item" href="<?= APP_URL ?>/logout.php">Sign Out</a></li>
+                    <li><a class="dropdown-item" href="<?= APP_URL ?>/change_password.php"><i class="fa-solid fa-key me-2"></i> Change Password</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="<?= APP_URL ?>/logout.php"><i class="fa-solid fa-right-from-bracket me-2"></i> Sign Out</a></li>
                 </ul>
             </div>
         </div>

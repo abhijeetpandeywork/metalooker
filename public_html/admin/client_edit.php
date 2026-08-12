@@ -184,6 +184,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $showCpc, $showCtr, $showImpressions, $showCampaigns, $showAdsets, $reportTitle
                 ]);
 
+                // Handle Optional Password Reset for Client Login
+                $newPassword = trim($_POST['new_password'] ?? '');
+                if (!empty($newPassword)) {
+                    if (strlen($newPassword) < 6) {
+                        throw new Exception("New client password must be at least 6 characters in length.");
+                    }
+                    $newHash = password_hash($newPassword, PASSWORD_BCRYPT, ['cost' => 12]);
+                    $db->prepare("UPDATE users SET password_hash = ? WHERE id = ?")->execute([$newHash, (int)$client['user_id']]);
+                    logActivity($_SESSION['user_id'], "Admin updated login password for client {$businessName} (User ID: {$client['user_id']})");
+                }
+
                 $db->commit();
                 logActivity($_SESSION['user_id'], "Updated client settings for client ID {$clientId}");
 
@@ -296,7 +307,9 @@ $csrfToken = generateCsrfToken();
                     <strong><?= e($_SESSION['user_name']) ?></strong>
                 </a>
                 <ul class="dropdown-menu dropdown-menu-dark shadow">
-                    <li><a class="dropdown-item" href="<?= APP_URL ?>/logout.php">Sign Out</a></li>
+                    <li><a class="dropdown-item" href="<?= APP_URL ?>/change_password.php"><i class="fa-solid fa-key me-2"></i> Change Password</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="<?= APP_URL ?>/logout.php"><i class="fa-solid fa-right-from-bracket me-2"></i> Sign Out</a></li>
                 </ul>
             </div>
         </div>
@@ -392,6 +405,23 @@ $csrfToken = generateCsrfToken();
                                 <div class="mb-3">
                                     <label class="form-label text-muted small fw-semibold">Client Login Email</label>
                                     <input type="email" class="form-control bg-body-tertiary shadow-sm" value="<?= e($client['client_email']) ?>" readonly disabled>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label text-muted small fw-semibold">
+                                        Set New Login Password
+                                        <button type="button" class="info-popover-btn" data-bs-toggle="popover" title="Client Password Reset" data-bs-content="Leave blank to keep existing password. Enter a new password (min 6 chars) to update client login access immediately.">i</button>
+                                    </label>
+                                    <div class="input-group shadow-sm">
+                                        <span class="input-group-text"><i class="fa-solid fa-lock"></i></span>
+                                        <input type="password" name="new_password" id="edit_client_new_pass" class="form-control" placeholder="Leave blank to keep current password" minlength="6" autocomplete="new-password">
+                                        <button class="btn btn-outline-secondary" type="button" id="btnToggleEditClientPass">
+                                            <i class="fa-regular fa-eye"></i>
+                                        </button>
+                                        <button class="btn btn-outline-primary" type="button" id="btnGenEditClientPass" title="Generate Random Password">
+                                            <i class="fa-solid fa-wand-magic-sparkles me-1"></i> Generate
+                                        </button>
+                                    </div>
+                                    <small class="text-muted">Enter a new password here to update the client's login credentials.</small>
                                 </div>
                                 <div class="row mb-3">
                                     <div class="col-md-6">
@@ -571,6 +601,29 @@ $csrfToken = generateCsrfToken();
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         window.APP_URL = "<?= APP_URL ?>";
+        document.getElementById('btnToggleEditClientPass')?.addEventListener('click', function() {
+            const input = document.getElementById('edit_client_new_pass');
+            const icon = this.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.replace('fa-eye', 'fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.replace('fa-eye-slash', 'fa-eye');
+            }
+        });
+
+        document.getElementById('btnGenEditClientPass')?.addEventListener('click', function() {
+            const chars = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$%';
+            let pass = '';
+            for (let i = 0; i < 10; i++) {
+                pass += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            const input = document.getElementById('edit_client_new_pass');
+            input.type = 'text';
+            input.value = pass;
+            document.querySelector('#btnToggleEditClientPass i').classList.replace('fa-eye', 'fa-eye-slash');
+        });
     </script>
     <script src="<?= APP_URL ?>/assets/js/dashboard.js"></script>
 </body>

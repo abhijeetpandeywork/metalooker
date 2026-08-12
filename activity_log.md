@@ -90,3 +90,10 @@ All major milestones, feature additions, database migrations, and deployment eve
 - **Consolidated Range Integration**: Updated `includes/meta_api.php` to support querying consolidated insights without `time_increment` constraints.
 - **Direct Live Meta Overlay in `dashboard_data.php`**: Integrated real-time query overlay for account, campaign, adset, and ad levels directly from Meta's API for the selected date range.
 - **Zero-Discrepancy Precision**: Verified that Account Total Reach (207,253), Total Spend (₹12,849.80), Total Impressions (307,095), Average Frequency (1.48x), CPM (₹41.84), and individual campaign metrics match Meta Ads Manager with 100.00% exact precision.
+
+## [Phase 13] — 2026-08-12: Full Self-Service & Admin Password Reset System
+- **User Self-Service Password Portal (`change_password.php`)**: Built dedicated authenticated password update screen verifying existing password, enforcing 6+ character minimums, and hashing via bcrypt with cost 12.
+- **Unauthenticated Password Recovery (`forgot_password.php`)**: Added recovery portal accessible directly via a "Forgot Password?" link on `login.php`.
+- **Super Admin Team Member Password Overrides (`admin/team.php`)**: Added "Reset Password" button on each team member card opening an interactive modal with a 1-click random password generator and visibility toggle.
+- **Super Admin Client Password Overrides (`admin/clients.php` & `admin/client_edit.php`)**: Added reset key action in client directory table and a password field inside client edit profile.
+- **Global Navigation Integration**: Embedded "Change Password" links across client dashboard headers and admin sidebar user dropdowns.

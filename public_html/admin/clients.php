@@ -105,6 +105,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
 }
 
+// Handle Admin Password Reset for Client Account
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'admin_reset_client_password') {
+    $csrfToken = $_POST['csrf_token'] ?? '';
+    if (!verifyCsrfToken($csrfToken)) {
+        $errorMessage = "CSRF verification failed.";
+    } else {
+        $targetUserId = (int)($_POST['target_user_id'] ?? 0);
+        $newPassword  = $_POST['new_password'] ?? '';
+
+        if ($targetUserId <= 0 || empty($newPassword)) {
+            $errorMessage = "User ID and new password are required.";
+        } elseif (strlen($newPassword) < 6) {
+            $errorMessage = "Password must be at least 6 characters in length.";
+        } else {
+            try {
+                $hash = password_hash($newPassword, PASSWORD_BCRYPT, ['cost' => 12]);
+                $stmt = $db->prepare("UPDATE users SET password_hash = ? WHERE id = ?");
+                $stmt->execute([$hash, $targetUserId]);
+
+                logActivity($_SESSION['user_id'], "Admin reset password for client user ID {$targetUserId}");
+                $successMessage = "Client login password has been successfully updated!";
+            } catch (Exception $e) {
+                $errorMessage = "Failed to reset client password: " . $e->getMessage();
+            }
+        }
+    }
+}
+
 // Fetch All Clients
 $clientsQuery = "
     SELECT c.*, u.email as client_email, u.created_at as user_created_at,
@@ -179,7 +207,9 @@ $csrfToken = generateCsrfToken();
                     <strong><?= e($_SESSION['user_name']) ?></strong>
                 </a>
                 <ul class="dropdown-menu dropdown-menu-dark shadow">
-                    <li><a class="dropdown-item" href="<?= APP_URL ?>/logout.php">Sign Out</a></li>
+                    <li><a class="dropdown-item" href="<?= APP_URL ?>/change_password.php"><i class="fa-solid fa-key me-2"></i> Change Password</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="<?= APP_URL ?>/logout.php"><i class="fa-solid fa-right-from-bracket me-2"></i> Sign Out</a></li>
                 </ul>
             </div>
         </div>
@@ -265,6 +295,16 @@ $csrfToken = generateCsrfToken();
                                                 <?php endif; ?>
                                             </td>
                                             <td class="text-end">
+                                                <!-- Reset Password Button -->
+                                                <button type="button" class="btn btn-sm btn-outline-warning me-1 shadow-sm btn-reset-client-pass" 
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#resetClientPassModal" 
+                                                        data-user-id="<?= $c['user_id'] ?>" 
+                                                        data-client-name="<?= e($c['business_name']) ?>" 
+                                                        data-client-email="<?= e($c['client_email']) ?>" 
+                                                        title="Set New Password for Client">
+                                                    <i class="fa-solid fa-key"></i>
+                                                </button>
                                                 <!-- Power Button: Pause / Enable Client -->
                                                 <a href="<?= APP_URL ?>/admin/clients.php?toggle_id=<?= $c['id'] ?>" class="btn btn-sm btn-outline-<?= $c['active'] ? 'warning' : 'success' ?> me-1 shadow-sm" title="<?= $c['active'] ? 'Pause Client Account' : 'Enable Client Account' ?>" data-bs-toggle="tooltip">
                                                     <i class="fa-solid fa-power-off"></i>
@@ -414,6 +454,46 @@ $csrfToken = generateCsrfToken();
         </div>
     </div>
 
+    <!-- Reset Client Password Modal -->
+    <div class="modal fade" id="resetClientPassModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content glass-card">
+                <div class="modal-header border-bottom">
+                    <h5 class="modal-title font-heading"><i class="fa-solid fa-key text-warning me-2"></i> Set Client Password</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="<?= e($csrfToken) ?>">
+                    <input type="hidden" name="action" value="admin_reset_client_password">
+                    <input type="hidden" name="target_user_id" id="reset_client_user_id" value="">
+
+                    <div class="modal-body">
+                        <div class="alert alert-light border small text-muted mb-3">
+                            Setting a new password for: <strong id="reset_client_business_name" class="text-dark"></strong> (<span id="reset_client_login_email"></span>)
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-muted small fw-semibold">New Password *</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fa-solid fa-lock"></i></span>
+                                <input type="password" name="new_password" id="modal_client_new_pass" class="form-control shadow-sm" placeholder="Minimum 6 characters" required minlength="6">
+                                <button class="btn btn-outline-secondary" type="button" id="btnToggleClientPass">
+                                    <i class="fa-regular fa-eye"></i>
+                                </button>
+                                <button class="btn btn-outline-primary" type="button" id="btnGenClientPass" title="Generate Random Password">
+                                    <i class="fa-solid fa-wand-magic-sparkles me-1"></i> Generate
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-top">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-warning font-heading shadow-sm"><i class="fa-solid fa-check me-1"></i> Save New Password</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         window.APP_URL = "<?= APP_URL ?>";
@@ -424,6 +504,39 @@ $csrfToken = generateCsrfToken();
             var modal = new bootstrap.Modal(document.getElementById('deleteClientModal'));
             modal.show();
         }
+
+        document.querySelectorAll('.btn-reset-client-pass').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.getElementById('reset_client_user_id').value = this.dataset.userId;
+                document.getElementById('reset_client_business_name').textContent = this.dataset.clientName;
+                document.getElementById('reset_client_login_email').textContent = this.dataset.clientEmail;
+                document.getElementById('modal_client_new_pass').value = '';
+            });
+        });
+
+        document.getElementById('btnToggleClientPass')?.addEventListener('click', function() {
+            const input = document.getElementById('modal_client_new_pass');
+            const icon = this.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.replace('fa-eye', 'fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.replace('fa-eye-slash', 'fa-eye');
+            }
+        });
+
+        document.getElementById('btnGenClientPass')?.addEventListener('click', function() {
+            const chars = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$%';
+            let pass = '';
+            for (let i = 0; i < 10; i++) {
+                pass += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            const input = document.getElementById('modal_client_new_pass');
+            input.type = 'text';
+            input.value = pass;
+            document.querySelector('#btnToggleClientPass i').classList.replace('fa-eye', 'fa-eye-slash');
+        });
     </script>
     <script src="<?= APP_URL ?>/assets/js/dashboard.js"></script>
 </body>
