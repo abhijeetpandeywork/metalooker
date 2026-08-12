@@ -79,3 +79,4 @@ All major milestones, feature additions, database migrations, and deployment eve
 - **System-Wide Indian Standard Time (IST / Asia/Kolkata)**: Enforced `date_default_timezone_set('Asia/Kolkata')` and PDO `SET time_zone = '+05:30'`, standardizing all backend logs, MySQL `NOW()` timestamps, and frontend consoles to IST.
 - **OAuth 2.0 Error Safeguard**: Resolved `$adAccountId` variable initialization in `oauth_callback.php`, eliminating HTTP 500 errors during Meta account authorization redirects.
 - **Logo Restoration**: Reverted `digital_rubix_logo.svg` to the original, high-contrast branded banner style (grey banner, black footer, serif fonts) to restore proper logo visibility on white dashboard headers.
+- **Admin Alert Pop-up Fix**: Added a Client ID check in `assets/js/dashboard.js` to guard `fetchDashboardData()` from executing on admin overview pages where no client reporting is active, resolving the "Client ID is required" alert pop-up.

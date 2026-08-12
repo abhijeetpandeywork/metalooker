@@ -179,6 +179,7 @@ document.addEventListener('DOMContentLoaded', function() {
      * Fetches analytics payload from backend API
      */
     function fetchDashboardData(cId, from, to, compFrom = '', compTo = '') {
+        if (!cId) return; // Guard against empty client ID
         let url = `${window.APP_URL}/api/dashboard_data.php?client_id=${cId}&from=${from}&to=${to}`;
         if (compFrom && compTo) {
             url += `&compare_from=${compFrom}&compare_to=${compTo}`;
