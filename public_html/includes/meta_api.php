@@ -85,7 +85,7 @@ class MetaAPI {
      * @return array Array of insight objects
      * @throws Exception
      */
-    public function getInsights(string $level, string $dateStart, string $dateStop): array {
+    public function getInsights(string $level, string $dateStart, string $dateStop, ?int $timeIncrement = 1): array {
         if (MOCK_META_API) {
             return $this->generateMockInsights($level, $dateStart, $dateStop);
         }
@@ -116,12 +116,15 @@ class MetaAPI {
         $fields = $levelFields[$level] ?? $levelFields['account'];
 
         $params = [
-            'fields'         => implode(',', $fields),
-            'level'          => $level,
-            'time_range'     => json_encode(['since' => $dateStart, 'until' => $dateStop]),
-            'time_increment' => 1,
-            'limit'          => 500
+            'fields'     => implode(',', $fields),
+            'level'      => $level,
+            'time_range' => json_encode(['since' => $dateStart, 'until' => $dateStop]),
+            'limit'      => 500
         ];
+
+        if ($timeIncrement !== null) {
+            $params['time_increment'] = $timeIncrement;
+        }
 
         $res = $this->makeApiCall("{$this->adAccountId}/insights", $params);
         return $res['data'] ?? [];
