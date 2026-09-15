@@ -228,13 +228,16 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
         <!-- Date Range Filter & Comparison Bar -->
         <div class="card glass-card p-3 mb-4 shadow-sm">
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
-                <div class="d-flex align-items-center gap-3 flex-wrap">
-                    <div class="btn-group shadow-sm" role="group" aria-label="Date presets">
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <div class="btn-group shadow-sm flex-wrap" role="group" aria-label="Date presets">
+                        <button type="button" class="btn btn-sm btn-outline-secondary btn-preset-date" data-preset="today"><i class="fa-solid fa-bolt text-warning me-1"></i>Today</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary btn-preset-date" data-preset="yesterday">Yesterday</button>
                         <button type="button" class="btn btn-sm btn-outline-secondary btn-preset-date" data-preset="last_7">7 Days</button>
                         <button type="button" class="btn btn-sm btn-outline-secondary btn-preset-date" data-preset="last_14">14 Days</button>
                         <button type="button" class="btn btn-sm btn-primary btn-preset-date active" data-preset="last_30">30 Days</button>
                         <button type="button" class="btn btn-sm btn-outline-secondary btn-preset-date" data-preset="this_month">This Month</button>
                         <button type="button" class="btn btn-sm btn-outline-secondary btn-preset-date" data-preset="last_month">Last Month</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary btn-preset-date" data-preset="lifetime">Lifetime</button>
                     </div>
 
                     <!-- Compare Toggle Switch -->
@@ -246,13 +249,18 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
                     </div>
                 </div>
 
-                <div class="d-flex align-items-center gap-2 flex-wrap flex-grow-1 flex-md-grow-0">
-                    <div class="d-flex align-items-center gap-2" style="min-width: 220px;">
+                <div class="d-flex align-items-center gap-2 flex-wrap flex-grow-1 flex-md-grow-0 justify-content-end">
+                    <!-- Dynamic Date Scope Summary Label -->
+                    <span class="badge bg-primary-subtle text-primary border px-2 py-2 font-heading d-none d-lg-inline-block" id="active-date-scope-badge">
+                        <i class="fa-regular fa-calendar-check me-1"></i> <span id="active-date-scope-text">Loading dates...</span>
+                    </span>
+
+                    <div class="d-flex align-items-center gap-2" style="min-width: 230px;">
                         <span class="badge bg-primary-subtle text-primary border me-1 font-heading" title="Primary Bracket (Period A)">Period A</span>
-                        <input type="text" id="date-range-picker" class="form-control form-control-sm shadow-sm" placeholder="Primary Date Bracket...">
+                        <input type="text" id="date-range-picker" class="form-control form-control-sm shadow-sm" placeholder="Select custom date range...">
                     </div>
 
-                    <div id="compare-picker-wrapper" class="d-none align-items-center gap-2" style="min-width: 220px;">
+                    <div id="compare-picker-wrapper" class="d-none align-items-center gap-2" style="min-width: 230px;">
                         <span class="badge bg-warning-subtle text-warning-emphasis border me-1 font-heading" title="Comparison Bracket (Period B)">Period B</span>
                         <input type="text" id="compare-range-picker" class="form-control form-control-sm shadow-sm border-warning" placeholder="Compare Bracket B...">
                     </div>

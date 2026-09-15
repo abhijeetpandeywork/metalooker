@@ -93,6 +93,14 @@ function getDateRangeBounds(string $preset): array {
     $yesterday = (new DateTime())->modify('-1 day');
 
     switch ($preset) {
+        case 'today':
+            $start = $today->format('Y-m-d');
+            $end = $today->format('Y-m-d');
+            break;
+        case 'yesterday':
+            $start = $yesterday->format('Y-m-d');
+            $end = $yesterday->format('Y-m-d');
+            break;
         case 'last_7':
             $start = (new DateTime())->modify('-7 days')->format('Y-m-d');
             $end = $yesterday->format('Y-m-d');
@@ -108,6 +116,10 @@ function getDateRangeBounds(string $preset): array {
         case 'last_month':
             $start = (new DateTime())->modify('first day of last month')->format('Y-m-d');
             $end = (new DateTime())->modify('last day of last month')->format('Y-m-d');
+            break;
+        case 'lifetime':
+            $start = (new DateTime())->modify('-365 days')->format('Y-m-d');
+            $end = $today->format('Y-m-d');
             break;
         case 'last_30':
         default:

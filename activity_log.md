@@ -91,9 +91,15 @@ All major milestones, feature additions, database migrations, and deployment eve
 - **Direct Live Meta Overlay in `dashboard_data.php`**: Integrated real-time query overlay for account, campaign, adset, and ad levels directly from Meta's API for the selected date range.
 - **Zero-Discrepancy Precision**: Verified that Account Total Reach (207,253), Total Spend (₹12,849.80), Total Impressions (307,095), Average Frequency (1.48x), CPM (₹41.84), and individual campaign metrics match Meta Ads Manager with 100.00% exact precision.
 
-## [Phase 13] — 2026-08-12: Full Self-Service & Admin Password Reset System
-- **User Self-Service Password Portal (`change_password.php`)**: Built dedicated authenticated password update screen verifying existing password, enforcing 6+ character minimums, and hashing via bcrypt with cost 12.
-- **Unauthenticated Password Recovery (`forgot_password.php`)**: Added recovery portal accessible directly via a "Forgot Password?" link on `login.php`.
-- **Super Admin Team Member Password Overrides (`admin/team.php`)**: Added "Reset Password" button on each team member card opening an interactive modal with a 1-click random password generator and visibility toggle.
-- **Super Admin Client Password Overrides (`admin/clients.php` & `admin/client_edit.php`)**: Added reset key action in client directory table and a password field inside client edit profile.
-- **Global Navigation Integration**: Embedded "Change Password" links across client dashboard headers and admin sidebar user dropdowns.
+## [Phase 14] — 2026-09-15: Service Manager Access Controls & Live Meta Account Balance & Billing Engine
+- **Centralized Client Access Authorization (`canAccessClient()`)**: Implemented `canAccessClient($clientId)` and `getAccessibleClientIds()` in `includes/auth.php`. Enforced strict authorization across `admin/clients.php`, `admin/client_edit.php`, `admin/sync_status.php`, `api/sync.php`, and `oauth_callback.php`.
+- **Directory & Action Isolation**: Filtered client directory and sync consoles for Service Managers / Team Members to only show explicitly assigned clients. Restricted client creation and permanent deletion strictly to Super Admins.
+- **Ad Account Balance & Billing Engine**:
+  - Auto-migrated `clients` table schema with `account_balance`, `amount_spent`, `spend_cap`, `account_status`, `disable_reason`, `funding_source_details`, and `billing_synced_at`.
+  - Expanded `MetaAPI::getAccountMetadata()` to query live ad account balance (unbilled due), lifetime amount spent, spend cap limits, and human-readable account status labels (`Active`, `Unsettled / Payment Due`, `Disabled`, etc.).
+  - Integrated billing sync into 6-hour cron engine (`cron/sync_all.php`) and on-demand "Auto-Detect & Sync Billing" action in `client_edit.php`.
+- **Live Billing UI & Payment Alerts**:
+  - Added real-time Account Billing, Spend Cap & Health Card in `admin/client_edit.php`.
+  - Added Balance Due & Account Status column badges in `admin/clients.php`.
+  - Integrated Account Billing & Balance summary strip in `public_html/dashboard.php` with automatic warning alert banner when account status is unsettled or requires payment attention.
+

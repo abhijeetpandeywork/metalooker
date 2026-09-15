@@ -59,14 +59,23 @@ document.addEventListener('DOMContentLoaded', function() {
             dateFormat: "Y-m-d",
             defaultDate: [currentFrom, currentTo],
             onClose: function(selectedDates, dateStr, instance) {
-                if (selectedDates.length === 2) {
+                if (selectedDates.length >= 1) {
                     currentFrom = instance.formatDate(selectedDates[0], "Y-m-d");
-                    currentTo = instance.formatDate(selectedDates[1], "Y-m-d");
+                    currentTo = selectedDates.length === 2 ? instance.formatDate(selectedDates[1], "Y-m-d") : currentFrom;
+                    
+                    // Clear preset button active states on manual custom picker select
+                    document.querySelectorAll('.btn-preset-date').forEach(b => {
+                        b.classList.remove('active', 'btn-primary');
+                        b.classList.add('btn-outline-secondary');
+                    });
+
+                    updateDateScopeBadge(currentFrom, currentTo);
                     fetchDashboardData(clientId, currentFrom, currentTo, compareFrom, compareTo);
                 }
             }
         });
         fpInstance.setDate([currentFrom, currentTo]);
+        updateDateScopeBadge(currentFrom, currentTo);
     }
 
     // Initialize Comparison Flatpickr Date Picker
@@ -77,9 +86,9 @@ document.addEventListener('DOMContentLoaded', function() {
             mode: "range",
             dateFormat: "Y-m-d",
             onClose: function(selectedDates, dateStr, instance) {
-                if (selectedDates.length === 2) {
+                if (selectedDates.length >= 1) {
                     compareFrom = instance.formatDate(selectedDates[0], "Y-m-d");
-                    compareTo = instance.formatDate(selectedDates[1], "Y-m-d");
+                    compareTo = selectedDates.length === 2 ? instance.formatDate(selectedDates[1], "Y-m-d") : compareFrom;
                     fetchDashboardData(clientId, currentFrom, currentTo, compareFrom, compareTo);
                 }
             }
@@ -120,6 +129,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (fpInstance) {
                 fpInstance.setDate([currentFrom, currentTo]);
             }
+            updateDateScopeBadge(currentFrom, currentTo, preset);
             fetchDashboardData(clientId, currentFrom, currentTo, compareFrom, compareTo);
         });
     });
@@ -575,6 +585,39 @@ document.addEventListener('DOMContentLoaded', function() {
         return `${year}-${month}-${day}`;
     }
 
+    function updateDateScopeBadge(startDateStr, endDateStr, preset = '') {
+        const badgeEl = document.getElementById('active-date-scope-badge');
+        const textEl = document.getElementById('active-date-scope-text');
+        if (!badgeEl || !textEl) return;
+
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const parseD = (str) => {
+            const parts = str.split('-');
+            return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        };
+
+        const d1 = parseD(startDateStr);
+        const d2 = parseD(endDateStr);
+        const diffDays = Math.round((d2 - d1) / (1000 * 60 * 60 * 24)) + 1;
+
+        const f1 = `${d1.getDate()} ${months[d1.getMonth()]} ${d1.getFullYear()}`;
+        const f2 = `${d2.getDate()} ${months[d2.getMonth()]} ${d2.getFullYear()}`;
+
+        if (startDateStr === endDateStr) {
+            const todayStr = formatDateYMD(new Date());
+            const yesterdayStr = formatDateYMD(new Date(Date.now() - 86400000));
+            if (startDateStr === todayStr) {
+                textEl.innerHTML = `<strong class="text-warning"><i class="fa-solid fa-bolt me-1"></i>Today</strong> • ${f1} (Live Real-Time)`;
+            } else if (startDateStr === yesterdayStr) {
+                textEl.innerHTML = `<strong>Yesterday</strong> • ${f1} (Full Day)`;
+            } else {
+                textEl.innerHTML = `${f1} (1 Day)`;
+            }
+        } else {
+            textEl.innerHTML = `${f1} – ${f2} <span class="badge bg-secondary-subtle text-secondary ms-1">${diffDays} Days</span>`;
+        }
+    }
+
     function calculatePresetDates(preset) {
         const today = new Date();
         const yesterday = new Date(today);
@@ -583,7 +626,13 @@ document.addEventListener('DOMContentLoaded', function() {
         let start = new Date(yesterday);
         let end = new Date(yesterday);
 
-        if (preset === 'last_7') {
+        if (preset === 'today') {
+            start = new Date(today);
+            end = new Date(today);
+        } else if (preset === 'yesterday') {
+            start = new Date(yesterday);
+            end = new Date(yesterday);
+        } else if (preset === 'last_7') {
             start.setDate(end.getDate() - 6);
         } else if (preset === 'last_14') {
             start.setDate(end.getDate() - 13);
@@ -593,7 +642,11 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (preset === 'last_month') {
             start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
             end = new Date(today.getFullYear(), today.getMonth(), 0);
-        } else {
+        } else if (preset === 'lifetime') {
+            start = new Date(today);
+            start.setDate(start.getDate() - 365);
+            end = today;
+        } else { // default last_30
             start.setDate(end.getDate() - 29);
         }
 
