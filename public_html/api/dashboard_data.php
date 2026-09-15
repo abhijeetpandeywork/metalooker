@@ -628,7 +628,7 @@ try {
                             spend_cap = ?,
                             disable_reason = ?,
                             funding_source_details = ?,
-                            billing_synced_at = NOW()
+                            billing_synced_at = CURRENT_TIMESTAMP
                         WHERE id = ?
                     ")->execute([
                         $liveMeta['account_status'],
