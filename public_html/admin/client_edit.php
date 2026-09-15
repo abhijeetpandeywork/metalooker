@@ -21,8 +21,8 @@ requireRole(['super_admin', 'team_member']);
 $db = Database::getInstance();
 $clientId = (int)($_GET['id'] ?? 0);
 
-if ($clientId <= 0) {
-    header("Location: " . APP_URL . "/admin/clients.php?error=invalid_id");
+if ($clientId <= 0 || !canAccessClient($clientId)) {
+    header("Location: " . APP_URL . "/admin/clients.php?error=" . urlencode("Forbidden: You do not have access to edit this client profile."));
     exit;
 }
 
@@ -45,7 +45,7 @@ if (!$client) {
 $successMessage = $_GET['success'] ?? null;
 $errorMessage = $_GET['error'] ?? null;
 
-// Handle Auto-Detect Meta Settings Action
+// Handle Auto-Detect Meta Settings Action (Includes Billing & Balance sync)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'autodetect_meta') {
     $csrfToken = $_POST['csrf_token'] ?? '';
     if (!verifyCsrfToken($csrfToken)) {
@@ -62,17 +62,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 $metaApi = new MetaAPI($plainToken, $metaAdAccountId);
                 $metaMeta = $metaApi->getAccountMetadata();
                 if (!empty($metaMeta['currency'])) {
-                    $metaCurr  = $metaMeta['currency'];
-                    $metaCCode = $metaMeta['business_country_code'] ?? 'IN';
-                    $metaCName = getCountryNameByCode($metaCCode);
+                    $metaCurr       = $metaMeta['currency'];
+                    $metaCCode      = $metaMeta['business_country_code'] ?? 'IN';
+                    $metaCName      = getCountryNameByCode($metaCCode);
+                    $accountStatus  = (int)($metaMeta['account_status'] ?? 1);
+                    $accountBalance = (float)($metaMeta['account_balance'] ?? 0.00);
+                    $amountSpent    = (float)($metaMeta['amount_spent'] ?? 0.00);
+                    $spendCap       = (float)($metaMeta['spend_cap'] ?? 0.00);
+                    $disableReason  = (int)($metaMeta['disable_reason'] ?? 0);
+                    $fundingSource  = $metaMeta['funding_source_details'] ?? '';
 
                     $db->prepare("
                         UPDATE clients 
-                        SET currency = ?, country_code = ?, country_name = ? 
+                        SET currency = ?,
+                            country_code = ?,
+                            country_name = ?,
+                            account_status = ?,
+                            account_balance = ?,
+                            amount_spent = ?,
+                            spend_cap = ?,
+                            disable_reason = ?,
+                            funding_source_details = ?,
+                            billing_synced_at = NOW()
                         WHERE id = ?
-                    ")->execute([$metaCurr, $metaCCode, $metaCName, $clientId]);
+                    ")->execute([
+                        $metaCurr, $metaCCode, $metaCName, $accountStatus, $accountBalance,
+                        $amountSpent, $spendCap, $disableReason, $fundingSource, $clientId
+                    ]);
 
-                    $msg = "Auto-detected from Meta API: Currency = {$metaCurr}, Primary Country = {$metaCName}.";
+                    $msg = "Auto-detected from Meta API: Currency = {$metaCurr}, Country = {$metaCName}, Account Status = {$metaMeta['account_status_label']}, Balance Due = " . formatCurrency($accountBalance, $metaCurr);
                     header("Location: " . APP_URL . "/admin/client_edit.php?id={$clientId}&success=" . urlencode($msg));
                     exit;
                 }
@@ -355,7 +373,7 @@ $csrfToken = generateCsrfToken();
                 </div>
                 <div class="card-body">
                     <div class="row align-items-center">
-                        <div class="col-md-8">
+                        <div class="col-md-6">
                             <p class="mb-1"><strong>Ad Account ID:</strong> <code><?= e($client['meta_ad_account_id'] ?: 'Not Connected') ?></code></p>
                             <p class="text-muted small mb-0">Token Expiry: <?= e($client['token_expires_at'] ? date('F j, Y g:i A', strtotime($client['token_expires_at'])) : 'N/A') ?></p>
                         </div>
@@ -363,8 +381,8 @@ $csrfToken = generateCsrfToken();
                             <form method="POST" class="d-inline">
                                 <input type="hidden" name="csrf_token" value="<?= e($csrfToken) ?>">
                                 <input type="hidden" name="action" value="autodetect_meta">
-                                <button type="submit" class="btn btn-outline-primary shadow-sm font-heading" title="Auto-fetches currency and country from Meta Ad Account">
-                                    <i class="fa-solid fa-wand-magic-sparkles me-1"></i> Auto-Detect Meta Settings
+                                <button type="submit" class="btn btn-outline-primary shadow-sm font-heading" title="Auto-fetches currency, country, balance, and billing status from Meta Ad Account">
+                                    <i class="fa-solid fa-wand-magic-sparkles me-1"></i> Auto-Detect & Sync Billing
                                 </button>
                             </form>
                             <?php if (MOCK_META_API): ?>
@@ -376,6 +394,55 @@ $csrfToken = generateCsrfToken();
                                     <i class="fa-brands fa-facebook me-1"></i> Connect Meta Account
                                 </a>
                             <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Meta Ad Account Billing & Balance Health Card -->
+            <?php 
+                $statusMeta = MetaAPI::parseAccountStatus((int)($client['account_status'] ?? 1));
+                $clientCurr = $client['currency'] ?? 'INR';
+            ?>
+            <div class="card glass-card mb-4 shadow-sm border-start border-4 border-<?= $statusMeta['class'] ?>">
+                <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center">
+                    <h5 class="m-0 font-heading"><i class="fa-solid fa-credit-card me-2 text-warning"></i> Ad Account Balance, Spend Cap & Billing Health</h5>
+                    <span class="badge bg-<?= $statusMeta['class'] ?> text-white px-3 py-2 shadow-sm">
+                        <i class="fa-solid fa-circle-dot me-1"></i> Account: <?= e($statusMeta['label']) ?>
+                    </span>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3 text-center text-md-start">
+                        <div class="col-6 col-md-3">
+                            <small class="text-muted text-uppercase fw-semibold d-block">Unbilled Balance Due</small>
+                            <h4 class="fw-bold font-heading m-0 <?= (float)($client['account_balance'] ?? 0) > 0 ? 'text-warning' : 'text-success' ?>">
+                                <?= formatCurrency($client['account_balance'] ?? 0, $clientCurr) ?>
+                            </h4>
+                            <small class="text-muted">Amount currently due</small>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <small class="text-muted text-uppercase fw-semibold d-block">Lifetime Amount Spent</small>
+                            <h4 class="fw-bold font-heading m-0 text-primary">
+                                <?= formatCurrency($client['amount_spent'] ?? 0, $clientCurr) ?>
+                            </h4>
+                            <small class="text-muted">Total ad account spend</small>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <small class="text-muted text-uppercase fw-semibold d-block">Account Spend Cap</small>
+                            <h4 class="fw-bold font-heading m-0 text-secondary">
+                                <?= (float)($client['spend_cap'] ?? 0) > 0 ? formatCurrency($client['spend_cap'], $clientCurr) : 'No Cap / Unlimited' ?>
+                            </h4>
+                            <small class="text-muted">Hard account limit</small>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <small class="text-muted text-uppercase fw-semibold d-block">Payment Method</small>
+                            <div class="fw-semibold text-truncate" title="<?= e($client['funding_source_details'] ?: 'Standard Meta Billing') ?>">
+                                <i class="fa-regular fa-credit-card me-1 text-info"></i>
+                                <?= e($client['funding_source_details'] ?: 'Meta Billing Card') ?>
+                            </div>
+                            <small class="text-muted">
+                                <?= !empty($client['billing_synced_at']) ? 'Updated: ' . date('d M, h:i A', strtotime($client['billing_synced_at'])) : 'Synced on refresh' ?>
+                            </small>
                         </div>
                     </div>
                 </div>

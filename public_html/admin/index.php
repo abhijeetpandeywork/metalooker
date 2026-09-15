@@ -68,26 +68,50 @@ foreach ($spendByCurrency as $row) {
     }
 }
 
-// Fetch Recent Activity Audit Log
-$activityStmt = $db->query("
-    SELECT al.*, u.name as user_name, u.role as user_role
-    FROM activity_log al
-    LEFT JOIN users u ON al.user_id = u.id
-    ORDER BY al.id DESC
-    LIMIT 15
-");
-$recentActivities = $activityStmt->fetchAll();
+// Fetch Recent Activity Audit Log & Active Clients
+if ($role === 'super_admin') {
+    $activityStmt = $db->query("
+        SELECT al.*, u.name as user_name, u.role as user_role
+        FROM activity_log al
+        LEFT JOIN users u ON al.user_id = u.id
+        ORDER BY al.id DESC
+        LIMIT 15
+    ");
+    $recentActivities = $activityStmt->fetchAll();
 
-// Fetch Active Clients Table
-$clientsStmt = $db->query("
-    SELECT c.*, u.email as client_email,
-           (SELECT synced_at FROM sync_logs WHERE client_id = c.id ORDER BY id DESC LIMIT 1) as last_sync
-    FROM clients c
-    JOIN users u ON c.user_id = u.id
-    WHERE c.active = 1
-    ORDER BY c.business_name ASC
-");
-$activeClients = $clientsStmt->fetchAll();
+    $clientsStmt = $db->query("
+        SELECT c.*, u.email as client_email,
+               (SELECT synced_at FROM sync_logs WHERE client_id = c.id ORDER BY id DESC LIMIT 1) as last_sync
+        FROM clients c
+        JOIN users u ON c.user_id = u.id
+        WHERE c.active = 1
+        ORDER BY c.business_name ASC
+    ");
+    $activeClients = $clientsStmt->fetchAll();
+} else {
+    $activityStmt = $db->prepare("
+        SELECT al.*, u.name as user_name, u.role as user_role
+        FROM activity_log al
+        LEFT JOIN users u ON al.user_id = u.id
+        WHERE al.user_id = ?
+        ORDER BY al.id DESC
+        LIMIT 15
+    ");
+    $activityStmt->execute([$userId]);
+    $recentActivities = $activityStmt->fetchAll();
+
+    $clientsStmt = $db->prepare("
+        SELECT c.*, u.email as client_email,
+               (SELECT synced_at FROM sync_logs WHERE client_id = c.id ORDER BY id DESC LIMIT 1) as last_sync
+        FROM clients c
+        JOIN users u ON c.user_id = u.id
+        JOIN team_client_access tca ON c.id = tca.client_id
+        WHERE c.active = 1 AND tca.user_id = ?
+        ORDER BY c.business_name ASC
+    ");
+    $clientsStmt->execute([$userId]);
+    $activeClients = $clientsStmt->fetchAll();
+}
 ?>
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="light">

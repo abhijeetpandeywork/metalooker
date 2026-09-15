@@ -29,8 +29,8 @@ $receivedState = $_GET['state'] ?? '';
 $code = $_GET['code'] ?? '';
 $error = $_GET['error_description'] ?? $_GET['error'] ?? null;
 
-if ($clientId <= 0) {
-    header("Location: " . APP_URL . "/admin/clients.php?error=" . urlencode("No active client context found for OAuth callback."));
+if ($clientId <= 0 || !canAccessClient($clientId)) {
+    header("Location: " . APP_URL . "/admin/clients.php?error=" . urlencode("Unauthorized or invalid client context for OAuth callback."));
     exit;
 }
 

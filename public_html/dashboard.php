@@ -187,6 +187,44 @@ if ($userRole === 'super_admin' || $userRole === 'team_member') {
         <input type="hidden" id="meta-client-id" value="<?= $clientId ?>">
         <input type="hidden" id="meta-currency" value="<?= e($currency) ?>">
 
+        <!-- Ad Account Billing & Health Alert Banner (Auto-rendered via JS) -->
+        <div id="account-billing-alert" class="alert alert-warning border-warning d-none align-items-center justify-content-between mb-4 shadow-sm" role="alert">
+            <div class="d-flex align-items-center">
+                <i class="fa-solid fa-triangle-exclamation fs-4 text-warning me-3"></i>
+                <div>
+                    <strong class="font-heading" id="billing-alert-title">Ad Account Notice: Payment Action Required</strong>
+                    <div class="small text-muted" id="billing-alert-msg">Your Meta Ad account status requires attention. Please verify payment method in Meta Business Manager.</div>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-2 mt-2 mt-md-0">
+                <span class="badge bg-danger text-white px-3 py-2" id="billing-alert-badge">Unsettled</span>
+            </div>
+        </div>
+
+        <!-- Account Billing & Balance Summary Strip -->
+        <div class="card glass-card p-3 mb-4 shadow-sm">
+            <div class="row g-3 align-items-center text-center text-md-start">
+                <div class="col-6 col-md-3 border-end">
+                    <span class="text-muted small text-uppercase fw-semibold d-block">Account Status</span>
+                    <span class="badge bg-success-subtle text-success px-2 py-1 mt-1 font-heading" id="dash-account-status">
+                        <i class="fa-solid fa-circle-dot me-1"></i> Active
+                    </span>
+                </div>
+                <div class="col-6 col-md-3 border-end">
+                    <span class="text-muted small text-uppercase fw-semibold d-block">Unbilled Balance Due</span>
+                    <h5 class="fw-bold font-heading m-0 text-success mt-1" id="dash-account-balance">—</h5>
+                </div>
+                <div class="col-6 col-md-3 border-end">
+                    <span class="text-muted small text-uppercase fw-semibold d-block">Account Spend Cap</span>
+                    <h5 class="fw-bold font-heading m-0 text-secondary mt-1" id="dash-account-cap">—</h5>
+                </div>
+                <div class="col-6 col-md-3">
+                    <span class="text-muted small text-uppercase fw-semibold d-block">Lifetime Ad Spend</span>
+                    <h5 class="fw-bold font-heading m-0 text-primary mt-1" id="dash-account-spent">—</h5>
+                </div>
+            </div>
+        </div>
+
         <!-- Date Range Filter & Comparison Bar -->
         <div class="card glass-card p-3 mb-4 shadow-sm">
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">

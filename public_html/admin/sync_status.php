@@ -17,26 +17,56 @@ requireRole(['super_admin', 'team_member']);
 
 $db = Database::getInstance();
 
-// Fetch Active Clients with last sync info
-$clientsStmt = $db->query("
-    SELECT c.id, c.business_name, c.meta_ad_account_id,
-           (SELECT synced_at FROM sync_logs WHERE client_id = c.id ORDER BY id DESC LIMIT 1) as last_sync,
-           (SELECT status FROM sync_logs WHERE client_id = c.id ORDER BY id DESC LIMIT 1) as last_status
-    FROM clients c
-    WHERE c.active = 1
-    ORDER BY c.business_name ASC
-");
-$clients = $clientsStmt->fetchAll();
+$role = $_SESSION['user_role'] ?? ($_SESSION['role'] ?? '');
+$userId = (int)($_SESSION['user_id'] ?? 0);
 
-// Fetch Last 30 Global Sync Log Entries
-$logsStmt = $db->query("
-    SELECT sl.*, c.business_name
-    FROM sync_logs sl
-    JOIN clients c ON sl.client_id = c.id
-    ORDER BY sl.id DESC
-    LIMIT 30
-");
-$recentLogs = $logsStmt->fetchAll();
+// Fetch Active Clients with last sync info
+if (isSuperAdmin()) {
+    $clientsStmt = $db->query("
+        SELECT c.id, c.business_name, c.meta_ad_account_id,
+               (SELECT synced_at FROM sync_logs WHERE client_id = c.id ORDER BY id DESC LIMIT 1) as last_sync,
+               (SELECT status FROM sync_logs WHERE client_id = c.id ORDER BY id DESC LIMIT 1) as last_status
+        FROM clients c
+        WHERE c.active = 1
+        ORDER BY c.business_name ASC
+    ");
+    $clients = $clientsStmt->fetchAll();
+
+    // Fetch Last 30 Global Sync Log Entries
+    $logsStmt = $db->query("
+        SELECT sl.*, c.business_name
+        FROM sync_logs sl
+        JOIN clients c ON sl.client_id = c.id
+        ORDER BY sl.id DESC
+        LIMIT 30
+    ");
+    $recentLogs = $logsStmt->fetchAll();
+} else {
+    $clientsStmt = $db->prepare("
+        SELECT c.id, c.business_name, c.meta_ad_account_id,
+               (SELECT synced_at FROM sync_logs WHERE client_id = c.id ORDER BY id DESC LIMIT 1) as last_sync,
+               (SELECT status FROM sync_logs WHERE client_id = c.id ORDER BY id DESC LIMIT 1) as last_status
+        FROM clients c
+        JOIN team_client_access tca ON c.id = tca.client_id
+        WHERE c.active = 1 AND tca.user_id = ?
+        ORDER BY c.business_name ASC
+    ");
+    $clientsStmt->execute([$userId]);
+    $clients = $clientsStmt->fetchAll();
+
+    // Fetch Last 30 Sync Log Entries for assigned clients
+    $logsStmt = $db->prepare("
+        SELECT sl.*, c.business_name
+        FROM sync_logs sl
+        JOIN clients c ON sl.client_id = c.id
+        JOIN team_client_access tca ON c.id = tca.client_id
+        WHERE tca.user_id = ?
+        ORDER BY sl.id DESC
+        LIMIT 30
+    ");
+    $logsStmt->execute([$userId]);
+    $recentLogs = $logsStmt->fetchAll();
+}
 
 $csrfToken = generateCsrfToken();
 ?>

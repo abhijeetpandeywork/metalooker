@@ -155,6 +155,83 @@ function isSuperAdmin(): bool {
 }
 
 /**
+ * Checks if the current authenticated user has access to a given client ID.
+ *
+ * @param int $clientId Client ID to verify
+ * @return bool True if authorized, false otherwise
+ */
+function canAccessClient(int $clientId): bool {
+    if (!isLoggedIn() || $clientId <= 0) {
+        return false;
+    }
+
+    $role = $_SESSION['user_role'] ?? ($_SESSION['role'] ?? '');
+    $userId = (int)($_SESSION['user_id'] ?? 0);
+
+    if ($role === 'super_admin') {
+        return true;
+    }
+
+    if ($role === 'client') {
+        return (int)($_SESSION['client_id'] ?? 0) === $clientId;
+    }
+
+    if ($role === 'team_member') {
+        try {
+            $db = Database::getInstance();
+            $stmt = $db->prepare("SELECT 1 FROM team_client_access WHERE user_id = ? AND client_id = ? LIMIT 1");
+            $stmt->execute([$userId, $clientId]);
+            return (bool)$stmt->fetch();
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Returns an array of client IDs that the current authenticated user is authorized to access.
+ *
+ * @return array Array of client IDs (integers)
+ */
+function getAccessibleClientIds(): array {
+    if (!isLoggedIn()) {
+        return [];
+    }
+
+    $role = $_SESSION['user_role'] ?? ($_SESSION['role'] ?? '');
+    $userId = (int)($_SESSION['user_id'] ?? 0);
+
+    if ($role === 'super_admin') {
+        try {
+            $db = Database::getInstance();
+            return $db->query("SELECT id FROM clients")->fetchAll(PDO::FETCH_COLUMN) ?: [];
+        } catch (Exception $e) {
+            return [];
+        }
+    }
+
+    if ($role === 'client') {
+        $cId = (int)($_SESSION['client_id'] ?? 0);
+        return $cId > 0 ? [$cId] : [];
+    }
+
+    if ($role === 'team_member') {
+        try {
+            $db = Database::getInstance();
+            $stmt = $db->prepare("SELECT client_id FROM team_client_access WHERE user_id = ?");
+            $stmt->execute([$userId]);
+            return $stmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
+        } catch (Exception $e) {
+            return [];
+        }
+    }
+
+    return [];
+}
+
+/**
  * Ensures user is authenticated; otherwise redirects to login portal.
  *
  * @return void

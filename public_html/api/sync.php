@@ -63,7 +63,12 @@ if (!$isSecretSync) {
                 exit;
             }
         } catch (Exception $eLimit) {}
-    } elseif (!in_array($userRole, ['super_admin', 'team_member'], true)) {
+    } elseif ($userRole === 'team_member') {
+        if (!canAccessClient($clientId)) {
+            echo json_encode(['success' => false, 'error' => 'Forbidden: You do not have access to manage or refresh this client account.']);
+            exit;
+        }
+    } elseif ($userRole !== 'super_admin') {
         echo json_encode(['success' => false, 'error' => 'Unauthorized access.']);
         exit;
     }

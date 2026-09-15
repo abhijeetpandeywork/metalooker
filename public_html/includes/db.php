@@ -184,6 +184,24 @@ class Database {
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
 
+            // Add billing and balance columns to clients table defensively
+            $colsToAdd = [
+                'account_balance'        => 'DECIMAL(12,2) DEFAULT 0.00',
+                'amount_spent'           => 'DECIMAL(12,2) DEFAULT 0.00',
+                'spend_cap'              => 'DECIMAL(12,2) DEFAULT 0.00',
+                'account_status'         => 'INT DEFAULT 1',
+                'disable_reason'         => 'INT DEFAULT 0',
+                'funding_source_details' => 'VARCHAR(255) DEFAULT NULL',
+                'billing_synced_at'      => 'DATETIME DEFAULT NULL'
+            ];
+            foreach ($colsToAdd as $col => $type) {
+                try {
+                    $pdo->exec("ALTER TABLE clients ADD COLUMN {$col} {$type}");
+                } catch (Exception $eCol) {
+                    // Column already exists, ignore
+                }
+            }
+
             // Seed Super Admin
             $adminHash = password_hash('Change@123', PASSWORD_BCRYPT, ['cost' => 12]);
             $pdo->exec("INSERT INTO users (id, name, email, password_hash, role) VALUES (1, 'Digital Rubix Admin', 'admin@digitalrubix.com', '{$adminHash}', 'super_admin') ON DUPLICATE KEY UPDATE name=VALUES(name)");

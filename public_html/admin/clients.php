@@ -19,55 +19,62 @@ $db = Database::getInstance();
 $successMessage = $_GET['success'] ?? null;
 $errorMessage   = $_GET['error'] ?? null;
 
-// Handle New Client Creation
+$role = $_SESSION['user_role'] ?? ($_SESSION['role'] ?? '');
+$userId = (int)($_SESSION['user_id'] ?? 0);
+
+// Handle New Client Creation (Super Admin Only)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'create_client') {
-    $csrfToken = $_POST['csrf_token'] ?? '';
-    if (!verifyCsrfToken($csrfToken)) {
-        $errorMessage = "CSRF verification failed.";
+    if (!isSuperAdmin()) {
+        $errorMessage = "Forbidden: Only Super Admins can register new client accounts.";
     } else {
-        $businessName    = trim($_POST['business_name'] ?? '');
-        $email           = trim($_POST['email'] ?? '');
-        $password        = $_POST['password'] ?? '';
-        $currency        = strtoupper(trim($_POST['currency'] ?? 'INR'));
-        $countryName     = trim($_POST['country_name'] ?? 'India');
-        $countryCode     = strtoupper(trim($_POST['country_code'] ?? 'IN'));
-        $brandColor      = trim($_POST['brand_color'] ?? '#0F2D55');
-        $targetLeadValue = isset($_POST['target_lead_value']) && $_POST['target_lead_value'] !== '' ? (float)$_POST['target_lead_value'] : 500.00;
-
-        if (empty($businessName) || empty($email) || empty($password)) {
-            $errorMessage = "All fields marked with * are required.";
+        $csrfToken = $_POST['csrf_token'] ?? '';
+        if (!verifyCsrfToken($csrfToken)) {
+            $errorMessage = "CSRF verification failed.";
         } else {
-            try {
-                $db->beginTransaction();
+            $businessName    = trim($_POST['business_name'] ?? '');
+            $email           = trim($_POST['email'] ?? '');
+            $password        = $_POST['password'] ?? '';
+            $currency        = strtoupper(trim($_POST['currency'] ?? 'INR'));
+            $countryName     = trim($_POST['country_name'] ?? 'India');
+            $countryCode     = strtoupper(trim($_POST['country_code'] ?? 'IN'));
+            $brandColor      = trim($_POST['brand_color'] ?? '#0F2D55');
+            $targetLeadValue = isset($_POST['target_lead_value']) && $_POST['target_lead_value'] !== '' ? (float)$_POST['target_lead_value'] : 500.00;
 
-                $passwordHash = password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]);
-                $userStmt = $db->prepare("INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, 'client')");
-                $userStmt->execute([$businessName, $email, $passwordHash]);
-                $userId = (int)$db->lastInsertId();
+            if (empty($businessName) || empty($email) || empty($password)) {
+                $errorMessage = "All fields marked with * are required.";
+            } else {
+                try {
+                    $db->beginTransaction();
 
-                $clientStmt = $db->prepare("
-                    INSERT INTO clients (user_id, business_name, brand_color, currency, country_code, country_name, target_lead_value, active)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, 1)
-                ");
-                $clientStmt->execute([$userId, $businessName, $brandColor, $currency, $countryCode, $countryName, $targetLeadValue]);
-                $clientId = (int)$db->lastInsertId();
+                    $passwordHash = password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]);
+                    $userStmt = $db->prepare("INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, 'client')");
+                    $userStmt->execute([$businessName, $email, $passwordHash]);
+                    $newUserId = (int)$db->lastInsertId();
 
-                $configStmt = $db->prepare("
-                    INSERT INTO dashboard_config (client_id, default_range, report_title)
-                    VALUES (?, 'last_30', ?)
-                ");
-                $configStmt->execute([$clientId, $businessName . ' Performance Dashboard']);
+                    $clientStmt = $db->prepare("
+                        INSERT INTO clients (user_id, business_name, brand_color, currency, country_code, country_name, target_lead_value, active)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, 1)
+                    ");
+                    $clientStmt->execute([$newUserId, $businessName, $brandColor, $currency, $countryCode, $countryName, $targetLeadValue]);
+                    $clientId = (int)$db->lastInsertId();
 
-                $db->commit();
-                logActivity($_SESSION['user_id'], "Created new client account: {$businessName} (ID: {$clientId})");
+                    $configStmt = $db->prepare("
+                        INSERT INTO dashboard_config (client_id, default_range, report_title)
+                        VALUES (?, 'last_30', ?)
+                    ");
+                    $configStmt->execute([$clientId, $businessName . ' Performance Dashboard']);
 
-                $successMessage = "Client account created successfully. You can now configure Meta connection.";
-            } catch (Exception $e) {
-                $db->rollBack();
-                if (strpos($e->getMessage(), 'UNIQUE constraint') !== false || strpos($e->getMessage(), 'Duplicate entry') !== false) {
-                    $errorMessage = "A user account with this email address already exists.";
-                } else {
-                    $errorMessage = "Failed to create client: " . $e->getMessage();
+                    $db->commit();
+                    logActivity($_SESSION['user_id'], "Created new client account: {$businessName} (ID: {$clientId})");
+
+                    $successMessage = "Client account created successfully. You can now configure Meta connection.";
+                } catch (Exception $e) {
+                    $db->rollBack();
+                    if (strpos($e->getMessage(), 'UNIQUE constraint') !== false || strpos($e->getMessage(), 'Duplicate entry') !== false) {
+                        $errorMessage = "A user account with this email address already exists.";
+                    } else {
+                        $errorMessage = "Failed to create client: " . $e->getMessage();
+                    }
                 }
             }
         }
@@ -77,6 +84,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 // Handle Client Status Toggle (Pause / Enable)
 if (isset($_GET['toggle_id'])) {
     $toggleId = (int)$_GET['toggle_id'];
+    if (!canAccessClient($toggleId)) {
+        header("Location: " . APP_URL . "/admin/clients.php?error=" . urlencode("Forbidden: You do not have permission to modify this client status."));
+        exit;
+    }
     $stmt = $db->prepare("UPDATE clients SET active = CASE WHEN active = 1 THEN 0 ELSE 1 END WHERE id = ?");
     $stmt->execute([$toggleId]);
     logActivity($_SESSION['user_id'], "Toggled active status for client ID {$toggleId}");
@@ -84,23 +95,27 @@ if (isset($_GET['toggle_id'])) {
     exit;
 }
 
-// Handle Client Permanent Deletion
+// Handle Client Permanent Deletion (Super Admin Only)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'delete_client') {
-    $csrfToken = $_POST['csrf_token'] ?? '';
-    if (!verifyCsrfToken($csrfToken)) {
-        $errorMessage = "CSRF verification failed.";
+    if (!isSuperAdmin()) {
+        $errorMessage = "Forbidden: Only Super Admins can permanently delete client accounts.";
     } else {
-        $deleteId = (int)$_POST['delete_client_id'];
-        $cStmt = $db->prepare("SELECT user_id, business_name FROM clients WHERE id = ?");
-        $cStmt->execute([$deleteId]);
-        $clientRow = $cStmt->fetch();
-        if ($clientRow) {
-            $uId   = (int)$clientRow['user_id'];
-            $bName = $clientRow['business_name'];
-            $db->prepare("DELETE FROM users WHERE id = ?")->execute([$uId]);
-            logActivity($_SESSION['user_id'], "Permanently deleted client account: {$bName} (ID: {$deleteId})");
-            header("Location: " . APP_URL . "/admin/clients.php?success=" . urlencode("Client account for '{$bName}' has been permanently removed."));
-            exit;
+        $csrfToken = $_POST['csrf_token'] ?? '';
+        if (!verifyCsrfToken($csrfToken)) {
+            $errorMessage = "CSRF verification failed.";
+        } else {
+            $deleteId = (int)$_POST['delete_client_id'];
+            $cStmt = $db->prepare("SELECT user_id, business_name FROM clients WHERE id = ?");
+            $cStmt->execute([$deleteId]);
+            $clientRow = $cStmt->fetch();
+            if ($clientRow) {
+                $uId   = (int)$clientRow['user_id'];
+                $bName = $clientRow['business_name'];
+                $db->prepare("DELETE FROM users WHERE id = ?")->execute([$uId]);
+                logActivity($_SESSION['user_id'], "Permanently deleted client account: {$bName} (ID: {$deleteId})");
+                header("Location: " . APP_URL . "/admin/clients.php?success=" . urlencode("Client account for '{$bName}' has been permanently removed."));
+                exit;
+            }
         }
     }
 }
@@ -114,7 +129,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $targetUserId = (int)($_POST['target_user_id'] ?? 0);
         $newPassword  = $_POST['new_password'] ?? '';
 
-        if ($targetUserId <= 0 || empty($newPassword)) {
+        // Check if user has permission to manage client for this user_id
+        $cLookup = $db->prepare("SELECT id FROM clients WHERE user_id = ? LIMIT 1");
+        $cLookup->execute([$targetUserId]);
+        $cFound = $cLookup->fetch();
+        $targetClientId = (int)($cFound['id'] ?? 0);
+
+        if (!canAccessClient($targetClientId)) {
+            $errorMessage = "Forbidden: You do not have permission to reset credentials for this client.";
+        } elseif ($targetUserId <= 0 || empty($newPassword)) {
             $errorMessage = "User ID and new password are required.";
         } elseif (strlen($newPassword) < 6) {
             $errorMessage = "Password must be at least 6 characters in length.";
@@ -133,15 +156,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
 }
 
-// Fetch All Clients
-$clientsQuery = "
-    SELECT c.*, u.email as client_email, u.created_at as user_created_at,
-           (SELECT synced_at FROM sync_logs WHERE client_id = c.id ORDER BY id DESC LIMIT 1) as last_sync
-    FROM clients c
-    JOIN users u ON c.user_id = u.id
-    ORDER BY c.id DESC
-";
-$clients = $db->query($clientsQuery)->fetchAll();
+// Fetch Clients (Filtered for Team Members)
+if (isSuperAdmin()) {
+    $clientsQuery = "
+        SELECT c.*, u.email as client_email, u.created_at as user_created_at,
+               (SELECT synced_at FROM sync_logs WHERE client_id = c.id ORDER BY id DESC LIMIT 1) as last_sync
+        FROM clients c
+        JOIN users u ON c.user_id = u.id
+        ORDER BY c.id DESC
+    ";
+    $clients = $db->query($clientsQuery)->fetchAll();
+} else {
+    $clientsStmt = $db->prepare("
+        SELECT c.*, u.email as client_email, u.created_at as user_created_at,
+               (SELECT synced_at FROM sync_logs WHERE client_id = c.id ORDER BY id DESC LIMIT 1) as last_sync
+        FROM clients c
+        JOIN users u ON c.user_id = u.id
+        JOIN team_client_access tca ON c.id = tca.client_id
+        WHERE tca.user_id = ?
+        ORDER BY c.id DESC
+    ");
+    $clientsStmt->execute([$userId]);
+    $clients = $clientsStmt->fetchAll();
+}
 
 $csrfToken = generateCsrfToken();
 ?>
@@ -219,15 +256,17 @@ $csrfToken = generateCsrfToken();
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h3 class="fw-bold m-0 font-heading">Agency Client Directory</h3>
-                    <p class="text-muted m-0">Manage multi-client credentials, Meta tokens, and dashboard settings</p>
+                    <p class="text-muted m-0">Manage multi-client credentials, Meta tokens, billing balances, and dashboard settings</p>
                 </div>
                 <div>
                     <button type="button" class="btn btn-sm btn-outline-dark me-2 btn-theme-toggle shadow-sm">
                         <i class="fa-solid fa-moon me-1"></i> Dark Mode
                     </button>
-                    <button class="btn btn-primary shadow-sm font-heading" data-bs-toggle="modal" data-bs-target="#newClientModal">
-                        <i class="fa-solid fa-plus me-1"></i> Add New Client
-                    </button>
+                    <?php if (isSuperAdmin()): ?>
+                        <button class="btn btn-primary shadow-sm font-heading" data-bs-toggle="modal" data-bs-target="#newClientModal">
+                            <i class="fa-solid fa-plus me-1"></i> Add New Client
+                        </button>
+                    <?php endif; ?>
                 </div>
             </div>
 
@@ -252,8 +291,9 @@ $csrfToken = generateCsrfToken();
                             <thead>
                                 <tr>
                                     <th>Business Name</th>
-                                    <th>Client Login Email</th>
+                                    <th>Client Login</th>
                                     <th>Meta Ad Account</th>
+                                    <th>Balance & Billing</th>
                                     <th>Token Health</th>
                                     <th>Status</th>
                                     <th class="text-end">Actions</th>
@@ -261,7 +301,7 @@ $csrfToken = generateCsrfToken();
                             </thead>
                             <tbody>
                                 <?php if (empty($clients)): ?>
-                                    <tr><td colspan="6" class="text-center text-muted py-4">No clients registered. Click "Add New Client" above to create your first client.</td></tr>
+                                    <tr><td colspan="7" class="text-center text-muted py-4">No clients registered or assigned to your account.</td></tr>
                                 <?php else: ?>
                                     <?php foreach ($clients as $c): ?>
                                         <?php
@@ -278,6 +318,10 @@ $csrfToken = generateCsrfToken();
                                                     $tokenBadge = '<span class="badge bg-danger text-white px-2 py-1"><i class="fa-solid fa-circle-xmark me-1"></i> Expired</span>';
                                                 }
                                             }
+
+                                            $statusMeta = MetaAPI::parseAccountStatus((int)($c['account_status'] ?? 1));
+                                            $cCurr = $c['currency'] ?? 'INR';
+                                            $balanceDue = (float)($c['account_balance'] ?? 0.00);
                                         ?>
                                         <tr>
                                             <td class="fw-semibold">
@@ -286,6 +330,16 @@ $csrfToken = generateCsrfToken();
                                             </td>
                                             <td><?= e($c['client_email']) ?></td>
                                             <td><code><?= e($c['meta_ad_account_id'] ?: 'Not Connected') ?></code></td>
+                                            <td>
+                                                <div>
+                                                    <span class="badge bg-<?= $statusMeta['class'] ?>-subtle text-<?= $statusMeta['class'] ?> fw-semibold">
+                                                        <i class="fa-solid fa-circle-dot me-1"></i> <?= e($statusMeta['label']) ?>
+                                                    </span>
+                                                    <div class="small fw-bold <?= $balanceDue > 0 ? 'text-warning' : 'text-success' ?> mt-1">
+                                                        Due: <?= formatCurrency($balanceDue, $cCurr) ?>
+                                                    </div>
+                                                </div>
+                                            </td>
                                             <td><?= $tokenBadge ?></td>
                                             <td>
                                                 <?php if ($c['active']): ?>
@@ -313,10 +367,12 @@ $csrfToken = generateCsrfToken();
                                                 <a href="<?= APP_URL ?>/admin/client_edit.php?id=<?= $c['id'] ?>" class="btn btn-sm btn-primary me-1 shadow-sm font-heading" title="Edit Profile & Meta Connection">
                                                     <i class="fa-solid fa-pen-to-square me-1"></i> Edit & OAuth
                                                 </a>
-                                                <!-- Trash Button: Delete Client -->
-                                                <button type="button" class="btn btn-sm btn-outline-danger shadow-sm" onclick="triggerDeleteModal(<?= $c['id'] ?>, '<?= e($c['business_name']) ?>')" title="Permanently Delete Client">
-                                                    <i class="fa-solid fa-trash-can"></i>
-                                                </button>
+                                                <!-- Trash Button: Delete Client (Super Admin Only) -->
+                                                <?php if (isSuperAdmin()): ?>
+                                                    <button type="button" class="btn btn-sm btn-outline-danger shadow-sm" onclick="triggerDeleteModal(<?= $c['id'] ?>, '<?= e($c['business_name']) ?>')" title="Permanently Delete Client">
+                                                        <i class="fa-solid fa-trash-can"></i>
+                                                    </button>
+                                                <?php endif; ?>
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>

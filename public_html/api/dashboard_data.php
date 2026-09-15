@@ -613,6 +613,9 @@ try {
         }
     }
 
+    $accountStatusRaw = (int)($client['account_status'] ?? 1);
+    $statusInfo = MetaAPI::parseAccountStatus($accountStatusRaw);
+
     echo json_encode([
         'success'         => true,
         'date_from'       => $from,
@@ -622,6 +625,20 @@ try {
         'client_currency' => $client['currency'] ?? 'INR',
         'client_country'  => $client['country_name'] ?? 'India',
         'config'          => $config,
+        'account_billing' => [
+            'balance'                => (float)($client['account_balance'] ?? 0.00),
+            'balance_formatted'      => formatCurrency($client['account_balance'] ?? 0.00, $client['currency'] ?? 'INR'),
+            'amount_spent'           => (float)($client['amount_spent'] ?? 0.00),
+            'amount_spent_formatted' => formatCurrency($client['amount_spent'] ?? 0.00, $client['currency'] ?? 'INR'),
+            'spend_cap'              => (float)($client['spend_cap'] ?? 0.00),
+            'spend_cap_formatted'    => (float)($client['spend_cap'] ?? 0.00) > 0 ? formatCurrency($client['spend_cap'], $client['currency'] ?? 'INR') : 'Unlimited',
+            'account_status'         => $accountStatusRaw,
+            'account_status_label'   => $statusInfo['label'],
+            'account_status_class'   => $statusInfo['class'],
+            'disable_reason'         => (int)($client['disable_reason'] ?? 0),
+            'funding_source'         => $client['funding_source_details'] ?? '',
+            'billing_synced_at'      => $client['billing_synced_at'] ?? null
+        ],
         'kpis'      => [
             'spend'           => $spend,
             'impressions'     => $impressions,

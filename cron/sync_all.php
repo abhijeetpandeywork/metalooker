@@ -78,23 +78,47 @@ function syncClientData(array $client): array {
 
         $metaApi = new MetaAPI($plainToken, $adAccountId);
 
-        // Auto-Detect & Auto-Sync Meta Ad Account Currency & Country
+        // Auto-Detect & Auto-Sync Meta Ad Account Currency, Country, Balance & Billing Metadata
         try {
             $metaMeta = $metaApi->getAccountMetadata();
             if (!empty($metaMeta['currency'])) {
-                $metaCurr = $metaMeta['currency'];
-                $metaCCode = $metaMeta['business_country_code'] ?? 'IN';
-                $metaCName = getCountryNameByCode($metaCCode);
+                $metaCurr        = $metaMeta['currency'];
+                $metaCCode       = $metaMeta['business_country_code'] ?? 'IN';
+                $metaCName       = getCountryNameByCode($metaCCode);
+                $accountStatus   = (int)($metaMeta['account_status'] ?? 1);
+                $accountBalance  = (float)($metaMeta['account_balance'] ?? 0.00);
+                $amountSpent     = (float)($metaMeta['amount_spent'] ?? 0.00);
+                $spendCap        = (float)($metaMeta['spend_cap'] ?? 0.00);
+                $disableReason   = (int)($metaMeta['disable_reason'] ?? 0);
+                $fundingSource   = $metaMeta['funding_source_details'] ?? '';
 
                 $db->prepare("
                     UPDATE clients 
-                    SET currency = ?, country_code = ?, country_name = ? 
+                    SET currency = ?,
+                        country_code = ?,
+                        country_name = ?,
+                        account_status = ?,
+                        account_balance = ?,
+                        amount_spent = ?,
+                        spend_cap = ?,
+                        disable_reason = ?,
+                        funding_source_details = ?,
+                        billing_synced_at = NOW()
                     WHERE id = ?
-                ")->execute([$metaCurr, $metaCCode, $metaCName, $clientId]);
+                ")->execute([
+                    $metaCurr, $metaCCode, $metaCName, $accountStatus, $accountBalance,
+                    $amountSpent, $spendCap, $disableReason, $fundingSource, $clientId
+                ]);
 
-                $client['currency'] = $metaCurr;
-                $client['country_code'] = $metaCCode;
-                $client['country_name'] = $metaCName;
+                $client['currency']               = $metaCurr;
+                $client['country_code']           = $metaCCode;
+                $client['country_name']           = $metaCName;
+                $client['account_status']         = $accountStatus;
+                $client['account_balance']        = $accountBalance;
+                $client['amount_spent']           = $amountSpent;
+                $client['spend_cap']              = $spendCap;
+                $client['disable_reason']         = $disableReason;
+                $client['funding_source_details'] = $fundingSource;
             }
         } catch (Exception $mEx) {
             // Non-blocking: fallback to existing client settings

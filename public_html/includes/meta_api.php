@@ -152,33 +152,82 @@ class MetaAPI {
     }
 
     /**
-     * Fetches currency, country code, timezone, and business name for the connected Meta Ad Account.
+     * Fetches currency, country code, timezone, business name, balance, amount spent, spend cap, and account status for the connected Meta Ad Account.
      *
-     * @return array Account metadata array
+     * @return array Account metadata and billing array
      * @throws Exception
      */
     public function getAccountMetadata(): array {
         if (MOCK_META_API) {
             return [
-                'id'                    => $this->adAccountId,
-                'name'                  => 'Bagnomy Meta Ads',
-                'currency'              => 'INR',
-                'business_country_code' => 'IN',
-                'timezone_name'         => 'Asia/Kolkata'
+                'id'                     => $this->adAccountId,
+                'name'                   => 'Bagnomy Meta Ads',
+                'currency'               => 'INR',
+                'business_country_code'  => 'IN',
+                'timezone_name'          => 'Asia/Kolkata',
+                'account_status'         => 1,
+                'account_status_label'   => 'Active',
+                'account_status_class'   => 'success',
+                'account_balance'        => 0.00,
+                'amount_spent'           => 12849.80,
+                'spend_cap'              => 0.00,
+                'disable_reason'         => 0,
+                'funding_source_details' => 'Primary Visa / Credit Card'
             ];
         }
 
         $res = $this->makeApiCall($this->adAccountId, [
-            'fields' => 'id,name,currency,business_country_code,timezone_name'
+            'fields' => 'id,name,currency,business_country_code,timezone_name,account_status,amount_spent,balance,spend_cap,disable_reason,funding_source_details'
         ]);
 
+        $rawStatus = (int)($res['account_status'] ?? 1);
+        $statusInfo = self::parseAccountStatus($rawStatus);
+
+        // Meta returns monetary values in base cents/sub-units, divide by 100
+        $balance = isset($res['balance']) ? (float)$res['balance'] / 100 : 0.00;
+        $amountSpent = isset($res['amount_spent']) ? (float)$res['amount_spent'] / 100 : 0.00;
+        $spendCap = isset($res['spend_cap']) ? (float)$res['spend_cap'] / 100 : 0.00;
+
+        $fundingSource = '';
+        if (isset($res['funding_source_details']) && is_array($res['funding_source_details'])) {
+            $fundingSource = $res['funding_source_details']['display_string'] ?? ($res['funding_source_details']['type'] ?? '');
+        }
+
         return [
-            'id'                    => $res['id'] ?? $this->adAccountId,
-            'name'                  => $res['name'] ?? '',
-            'currency'              => strtoupper($res['currency'] ?? 'INR'),
-            'business_country_code' => strtoupper($res['business_country_code'] ?? 'IN'),
-            'timezone_name'         => $res['timezone_name'] ?? 'Asia/Kolkata'
+            'id'                     => $res['id'] ?? $this->adAccountId,
+            'name'                   => $res['name'] ?? '',
+            'currency'               => strtoupper($res['currency'] ?? 'INR'),
+            'business_country_code'  => strtoupper($res['business_country_code'] ?? 'IN'),
+            'timezone_name'          => $res['timezone_name'] ?? 'Asia/Kolkata',
+            'account_status'         => $rawStatus,
+            'account_status_label'   => $statusInfo['label'],
+            'account_status_class'   => $statusInfo['class'],
+            'account_balance'        => $balance,
+            'amount_spent'           => $amountSpent,
+            'spend_cap'              => $spendCap,
+            'disable_reason'         => (int)($res['disable_reason'] ?? 0),
+            'funding_source_details' => $fundingSource
         ];
+    }
+
+    /**
+     * Parses Meta Ad Account Status code into human-readable label and UI CSS color.
+     *
+     * @param int $status Status code from Meta API
+     * @return array Array with 'label' and 'class'
+     */
+    public static function parseAccountStatus(int $status): array {
+        return match ($status) {
+            1 => ['label' => 'Active', 'class' => 'success'],
+            2 => ['label' => 'Disabled', 'class' => 'danger'],
+            3 => ['label' => 'Unsettled (Payment Due)', 'class' => 'warning'],
+            7 => ['label' => 'Pending Review', 'class' => 'info'],
+            8 => ['label' => 'Pending Settlement', 'class' => 'warning'],
+            9 => ['label' => 'Grace Period', 'class' => 'warning'],
+            100 => ['label' => 'Pending Closure', 'class' => 'secondary'],
+            101 => ['label' => 'Closed', 'class' => 'secondary'],
+            default => ['label' => 'Active', 'class' => 'success']
+        };
     }
 
     /**

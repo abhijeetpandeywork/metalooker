@@ -281,6 +281,51 @@ document.addEventListener('DOMContentLoaded', function() {
                 renderSpendLineChart(dailySeriesCache, isCompareActive ? dailySeriesBCache : []);
                 renderImpClickBarChart(campaignsData);
 
+                // Render Account Billing & Balance Strip
+                if (data.account_billing) {
+                    const b = data.account_billing;
+                    const statusEl = document.getElementById('dash-account-status');
+                    const balanceEl = document.getElementById('dash-account-balance');
+                    const capEl = document.getElementById('dash-account-cap');
+                    const spentEl = document.getElementById('dash-account-spent');
+                    const alertBanner = document.getElementById('account-billing-alert');
+                    const alertBadge = document.getElementById('billing-alert-badge');
+                    const alertMsg = document.getElementById('billing-alert-msg');
+
+                    if (statusEl) {
+                        statusEl.className = `badge bg-${b.account_status_class}-subtle text-${b.account_status_class} px-2 py-1 mt-1 font-heading`;
+                        statusEl.innerHTML = `<i class="fa-solid fa-circle-dot me-1"></i> ${b.account_status_label}`;
+                    }
+                    if (balanceEl) {
+                        balanceEl.innerText = b.balance_formatted;
+                        balanceEl.className = `fw-bold font-heading m-0 mt-1 ${b.balance > 0 ? 'text-warning' : 'text-success'}`;
+                    }
+                    if (capEl) {
+                        capEl.innerText = b.spend_cap_formatted;
+                    }
+                    if (spentEl) {
+                        spentEl.innerText = b.amount_spent_formatted;
+                    }
+
+                    // Show Alert Banner if account has issue (e.g. Unsettled = 3, Disabled = 2)
+                    if (alertBanner && alertBadge) {
+                        if (b.account_status === 2 || b.account_status === 3 || b.account_status === 7 || b.account_status === 8) {
+                            alertBanner.classList.remove('d-none');
+                            alertBanner.classList.add('d-flex');
+                            alertBadge.innerText = b.account_status_label;
+                            alertBadge.className = `badge bg-${b.account_status_class} text-white px-3 py-2`;
+                            if (b.account_status === 3) {
+                                alertMsg.innerText = `Payment failed or balance (${b.balance_formatted}) is due. Please clear outstanding balance in Meta Ads Manager.`;
+                            } else if (b.account_status === 2) {
+                                alertMsg.innerText = `This ad account is currently disabled by Meta. Please check Account Quality in Meta Business Suite.`;
+                            }
+                        } else {
+                            alertBanner.classList.remove('d-flex');
+                            alertBanner.classList.add('d-none');
+                        }
+                    }
+                }
+
                 const currentSearch = tableSearchInput ? tableSearchInput.value.toLowerCase().trim() : '';
                 filterAndRenderTables(currentSearch);
                 initInfoPopovers();
