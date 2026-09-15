@@ -605,6 +605,9 @@ try {
                     ];
                 }, $liveAdsRaw);
 
+                usort($ads, fn($a, $b) => (float)$b['spend'] <=> (float)$a['spend']);
+            }
+
             // 5. Live Billing, Balance, Spend Cap & Account Health
             try {
                 $liveMeta = $metaApi->getAccountMetadata();
