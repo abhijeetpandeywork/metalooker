@@ -605,7 +605,40 @@ try {
                     ];
                 }, $liveAdsRaw);
 
-                usort($ads, fn($a, $b) => (float)$b['spend'] <=> (float)$a['spend']);
+            // 5. Live Billing, Balance, Spend Cap & Account Health
+            try {
+                $liveMeta = $metaApi->getAccountMetadata();
+                if (!empty($liveMeta)) {
+                    $client['account_status']         = $liveMeta['account_status'];
+                    $client['account_balance']        = $liveMeta['account_balance'];
+                    $client['amount_spent']           = $liveMeta['amount_spent'];
+                    $client['spend_cap']              = $liveMeta['spend_cap'];
+                    $client['disable_reason']         = $liveMeta['disable_reason'];
+                    $client['funding_source_details'] = $liveMeta['funding_source_details'];
+                    $client['billing_synced_at']      = date('Y-m-d H:i:s');
+
+                    $db->prepare("
+                        UPDATE clients SET
+                            account_status = ?,
+                            account_balance = ?,
+                            amount_spent = ?,
+                            spend_cap = ?,
+                            disable_reason = ?,
+                            funding_source_details = ?,
+                            billing_synced_at = NOW()
+                        WHERE id = ?
+                    ")->execute([
+                        $liveMeta['account_status'],
+                        $liveMeta['account_balance'],
+                        $liveMeta['amount_spent'],
+                        $liveMeta['spend_cap'],
+                        $liveMeta['disable_reason'],
+                        $liveMeta['funding_source_details'],
+                        $clientId
+                    ]);
+                }
+            } catch (Throwable $eBillingLive) {
+                error_log("Live billing metadata fetch fallback: " . $eBillingLive->getMessage());
             }
 
         } catch (Throwable $eLive) {
